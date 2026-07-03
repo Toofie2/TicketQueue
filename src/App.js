@@ -1,12 +1,7 @@
-import './App.css';
+import Home from "./pages/Home";
 
 function App() {
-  return (
-    <div className="App">
-      <h1>TixQ</h1>
-      <p>Storefront setup is working.</p>
-    </div>
-  );
+  return <Home />;
 }
 
 export default App;
