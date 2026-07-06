@@ -38,11 +38,13 @@
   background-color: #102f3d;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: bold;
   cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .buy-button:hover {
-  opacity: 0.9;
+  background-color: #18465a;
+  transform: translateY(-2px);
 }
