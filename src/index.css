@@ -1,13 +1,63 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import url('https://googleapis.com');
+
+
+/* --- Header Layout & Background Rectangle --- */
+.main-header {
+  background-color: #1b2b36;
+  border-bottom: 1px solid #1b2b36;
+  padding: 10px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* --- Navigation Link Row Styles --- */
+.header-nav ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 25px;
+}
+
+.header-nav a {
+  text-decoration: none;
+  color: #d9d9d9;
+  transition: color 0.2s ease;
+}
+
+.header-nav a:hover {
+  color: #c59648;
+}
+
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Nunito', sans-serif;
+  color: #1b2b36;
+  font-size: 20px;
+  font-weight: 800;
+  min-height: 100vh;
+
+  background-color: #ffffff;
+
+  background-image: 
+    linear-gradient(172deg, #c59648 35%, transparent 35.5%),
+    linear-gradient(188deg, #b47d37 35%, transparent 35.5%);
+  background-attachment: fixed;
+
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+}
+
+.logo-tix-q {
+  font-family: 'Nunito', sans-serif;
+  color: #d9d9d9;
+  font-size: 2rem;
+  font-weight: 900;
+  font-style: italic;
 }
