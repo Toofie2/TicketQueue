@@ -1,0 +1,39 @@
+.event-card {
+  background-color: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.event-image {
+  height: 170px;
+  background-color: #f2eadc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.event-image span {
+  font-size: 24px;
+  font-weight: 800;
+  color: #172d3a;
+}
+
+.event-info {
+  padding: 16px;
+}
+
+.event-info h3 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.event-info p {
+  margin: 6px 0;
+  color: #333;
+}
+
+.event-price {
+  font-weight: 800;
+  color: #b6843c;
+}

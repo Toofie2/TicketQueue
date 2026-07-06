@@ -1,23 +1,46 @@
+import { useState } from "react";
+import Navbar from "../components/Navbar";
+import SearchBar from "../components/SearchBar";
+import FeaturedBanner from "../components/FeaturedBanner";
+import EventCard from "../components/EventCard";
 import events from "../data/events";
+import "../styles/Home.css";
 
 function Home() {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredEvents = events.filter((event) => {
+  const searchText = searchTerm.trim().toLowerCase();
+
+  return (
+    event.title.toLowerCase().includes(searchText) ||
+    event.category.toLowerCase().includes(searchText) ||
+    event.location.toLowerCase().includes(searchText)
+  );
+});
+
   return (
     <div>
-      <h1>Welcome to TixQ</h1>
-      <p>Browse upcoming events.</p>
+      <Navbar />
+      <SearchBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
+      <FeaturedBanner />
 
-      <h2>Upcoming Events</h2>
+      <main className="home-content">
+        <h2 className="deals-title">Good deals just for you</h2>
 
-      {events.map((event) => (
-        <div key={event.id}>
-        <h3>{event.title}</h3>
-        <p>
-            {event.date} at {event.time}
-        </p>
-        <p>{event.location}</p>
-        <p>${event.price}</p>
-        </div>
-      ))}
+        {filteredEvents.length > 0 ? (
+          <div className="event-grid">
+            {filteredEvents.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : (
+          <p className="no-results">No events found.</p>
+        )}
+      </main>
     </div>
   );
 }
