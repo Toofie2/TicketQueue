@@ -1,8 +1,14 @@
+import { useNavigate } from "react-router-dom";
 import "../styles/EventCard.css";
 
 function EventCard({ event }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="event-card">
+    <div
+      className="event-card"
+      onClick={() => navigate(`/event/${event.id}`)}
+    >
       <div className="event-image">
         <span>{event.category}</span>
       </div>
