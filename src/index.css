@@ -1,7 +1,6 @@
 @import url('https://googleapis.com');
 
 
-/* --- Header Layout & Background Rectangle --- */
 .main-header {
   background-color: #1b2b36;
   border-bottom: 1px solid #1b2b36;
@@ -11,7 +10,6 @@
   align-items: center;
 }
 
-/* --- Navigation Link Row Styles --- */
 .header-nav ul {
   display: flex;
   list-style: none;
@@ -30,6 +28,24 @@
   color: #c59648;
 }
 
+.outer-box {
+  background-color: #1b2b36;
+  border-radius: 24px;
+  padding: 30px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);  
+}
+
+.inner-box {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #c59648;
+  padding-bottom: 15px;
+}
+
+.outer-box h2, .outer-box h3 {
+  color: #d9d9d9;
+}
 
 body {
   margin: 0;
