@@ -1,24 +1,37 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import AdminNav from "./components/AdminNav";
+import AdminDashboard from "./pages/AdminDashboard";
+import ServiceManagement from "./pages/ServiceManagement";
+import QueueManagement from "./pages/QueueManagement";
+import { initialSales, initialQueue } from "./data/adminMockData";
+import "./styles/Admin.css";
 
 function App() {
+  const [sales, setSales] = useState(initialSales);
+  const [queue, setQueue] = useState(initialQueue);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <AdminNav />
+      <Routes>
+        <Route path="/" element={<Navigate to="/admin" replace />} />
+        <Route
+          path="/admin"
+          element={<AdminDashboard sales={sales} queue={queue} />}
+        />
+        <Route
+          path="/admin/services"
+          element={<ServiceManagement sales={sales} setSales={setSales} />}
+        />
+        <Route
+          path="/admin/queue"
+          element={
+            <QueueManagement sales={sales} queue={queue} setQueue={setQueue} />
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
