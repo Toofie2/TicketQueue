@@ -1,4 +1,4 @@
-import '../styles/queue.css';
+import '../styles/Queue.css';
 
 function Queue({ positionNumber, waitTime, isTimeUp, onCheckout }) {
     return (

@@ -6,7 +6,7 @@ import Navbar from '../components/Navbar';
 import Queue from '../components/Queue';
 
 function UserQueueView() {
-    const positionNumber = 1245;
+    const positionNumber = 12;
     const [waitTime, setWaitTime] = useState(1);
     const [isTimeUp, setIsTimeUp] = useState(false);
     const navigate = useNavigate();

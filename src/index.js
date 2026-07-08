@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import JoinQueue from './pages/JoinQueue';
 import UserQueue from './pages/UserQueue';
 import './index.css';
 
@@ -11,6 +12,7 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
+        <Route path="/join" element={<JoinQueue />} />
         <Route path="/queue" element={<UserQueue />} />
       </Routes>
     </BrowserRouter>
