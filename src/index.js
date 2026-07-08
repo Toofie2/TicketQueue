@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import UserQueue from './views/queue/UserQueue';
+import UserQueue from './pages/UserQueue';
 import './index.css';
 
 
