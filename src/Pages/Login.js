@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../Styles/Login.css';
 
-function Login({ switchView }) {
+function Login({ switchView, onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +29,8 @@ function Login({ switchView }) {
       setErrorField('password'); return setError('Error: Password is required.');
     }
     
-    alert('Login Successful! (Simulation)');
+    // THIS IS THE FIX: No more alert! It instantly triggers the dashboard transition.
+    onLoginSuccess(email);
   };
 
   const handleSendCode = (e) => {
@@ -131,7 +132,7 @@ function Login({ switchView }) {
         <svg viewBox="0 0 21 21" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path fill="#f25022" d="M1 1h9v9H1z"/><path fill="#00a4ef" d="M1 11h9v9H1z"/><path fill="#7fba00" d="M11 1h9v9h-9z"/><path fill="#ffb900" d="M11 11h9v9h-9z"/></svg>
         Sign in with Microsoft
       </button>
-      
+
       <button onClick={switchView} style={{ marginTop: '25px', background: 'none', border: 'none', color: '#D4A373', cursor: 'pointer', width: '100%', textDecoration: 'underline', fontWeight: 'bold' }}>
         Don't have an account? Register here
       </button>
