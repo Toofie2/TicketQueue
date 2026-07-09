@@ -4,6 +4,10 @@ export const initialSales = [
   {
     id: 1,
     event: "Houston Rockets vs Dallas Mavericks",
+    description: "NBA regular season home game with premium seating.",
+    durationMinutes: 150,
+    priority: "high",
+    queueOpen: true,
     venue: "Toyota Center",
     date: "2026-08-12",
     price: 45,
@@ -12,6 +16,10 @@ export const initialSales = [
   {
     id: 2,
     event: "Summer Music Festival",
+    description: "Outdoor all-day festival featuring multiple live acts.",
+    durationMinutes: 480,
+    priority: "medium",
+    queueOpen: true,
     venue: "Discovery Green",
     date: "2026-08-20",
     price: 60,
@@ -20,6 +28,10 @@ export const initialSales = [
   {
     id: 3,
     event: "Comedy Night Live",
+    description: "Stand-up comedy showcase with headline performers.",
+    durationMinutes: 120,
+    priority: "low",
+    queueOpen: false,
     venue: "House of Blues Houston",
     date: "2026-09-05",
     price: 35,

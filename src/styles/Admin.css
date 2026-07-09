@@ -1,15 +1,17 @@
 :root {
-  --navy: #172d3a;
-  --navy-dark: #102f3d;
-  --navy-hover: #18465a;
-  --orange: #f5b169;
-  --orange-light: #fbd6a8;
-  --gold: #b6843c;
+  /* Palette matched to tiffani-queuescreen (dark slate + gold) */
+  --slate: #1b2b36;
+  --slate-dark: #12212a;
+  --slate-hover: #2a4250;
+  --gold: #c59648;
+  --gold-soft: #d8ac62;
+  --gold-light: #e0c288;
+  --gold-dark: #b47d37;
 }
 
 .admin-nav {
   height: 64px;
-  background-color: var(--navy);
+  background-color: var(--slate);
   color: white;
   display: flex;
   align-items: center;
@@ -40,12 +42,12 @@
 
 .admin-nav-links a:hover {
   color: white;
-  background-color: var(--navy-hover);
+  background-color: var(--slate-hover);
 }
 
 .admin-nav-links a.active {
-  color: var(--navy-dark);
-  background-color: var(--orange);
+  color: var(--slate-dark);
+  background-color: var(--gold);
 }
 
 .admin-page {
@@ -56,7 +58,7 @@
 }
 
 .admin-header h1 {
-  color: var(--navy);
+  color: var(--slate);
   font-size: 34px;
   margin: 0;
 }
@@ -80,7 +82,7 @@
   gap: 6px;
   padding: 22px;
   border-radius: 16px;
-  background-color: var(--orange);
+  background-color: var(--gold-soft);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -93,13 +95,13 @@
 .stat-value {
   font-size: 30px;
   font-weight: 800;
-  color: var(--navy);
+  color: var(--slate);
 }
 
 .stat-label {
   font-size: 15px;
   font-weight: 700;
-  color: var(--navy-dark);
+  color: var(--slate-dark);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -120,7 +122,7 @@
 }
 
 .panel h2 {
-  color: var(--navy);
+  color: var(--slate);
   margin: 0 0 18px;
   font-size: 22px;
 }
@@ -147,23 +149,46 @@
   flex-direction: column;
   gap: 6px;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--slate);
   font-size: 14px;
 }
 
-.sale-form input {
+.sale-form input,
+.sale-form textarea,
+.sale-form select {
   padding: 10px 14px;
   border-radius: 12px;
-  border: 2px solid var(--navy);
+  border: 2px solid var(--slate);
   background-color: #fbfaf7;
   font-size: 15px;
+  font-family: inherit;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.sale-form input:focus {
+.sale-form textarea {
+  resize: vertical;
+}
+
+.sale-form input:focus,
+.sale-form textarea:focus,
+.sale-form select:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 8px rgba(182, 132, 60, 0.3);
+  box-shadow: 0 0 8px rgba(197, 150, 72, 0.3);
+}
+
+.field-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  align-self: flex-end;
+}
+
+.form-error {
+  margin: 0;
+  color: #a23b2d;
+  font-weight: 700;
+  font-size: 14px;
 }
 
 .form-row {
@@ -180,7 +205,7 @@
 
 .primary-button {
   padding: 12px 24px;
-  background-color: var(--navy-dark);
+  background-color: var(--slate-dark);
   color: white;
   border: none;
   border-radius: 12px;
@@ -190,7 +215,7 @@
 }
 
 .primary-button:hover:not(:disabled) {
-  background-color: var(--navy-hover);
+  background-color: var(--slate-hover);
   transform: translateY(-2px);
 }
 
@@ -202,8 +227,8 @@
 .ghost-button {
   padding: 10px 18px;
   background: transparent;
-  color: var(--navy);
-  border: 2px solid var(--navy);
+  color: var(--slate);
+  border: 2px solid var(--slate);
   border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -211,7 +236,7 @@
 }
 
 .ghost-button:hover {
-  background-color: var(--navy);
+  background-color: var(--slate);
   color: white;
 }
 
@@ -247,19 +272,21 @@
   gap: 12px;
   padding: 14px 16px;
   border-radius: 12px;
-  background-color: var(--orange);
+  background-color: var(--gold);
 }
 
 .item-list strong {
-  color: var(--navy);
+  color: var(--slate);
   display: block;
 }
 
 .item-list--light li {
-  background-color: var(--orange-light);
+  background-color: var(--gold-light);
 }
 
 .sale-meta {
+  display: block;
+  margin-top: 3px;
   font-size: 13px;
   color: #666;
 }
@@ -268,7 +295,7 @@
   flex-shrink: 0;
   padding: 6px 14px;
   border-radius: 999px;
-  background-color: var(--navy);
+  background-color: var(--slate);
   color: white;
   font-weight: 700;
   font-size: 13px;
@@ -292,35 +319,35 @@
   align-items: center;
   gap: 10px;
   padding: 10px 18px;
-  border: 2px solid var(--navy);
+  border: 2px solid var(--slate);
   border-radius: 12px;
   background: transparent;
-  color: var(--navy);
+  color: var(--slate);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .event-tab:hover {
-  background-color: var(--orange-light);
+  background-color: var(--gold-light);
 }
 
 .event-tab-active {
-  background-color: var(--orange);
-  border-color: var(--orange);
-  color: var(--navy-dark);
+  background-color: var(--gold);
+  border-color: var(--gold);
+  color: var(--slate-dark);
 }
 
 .event-tab-count {
   padding: 2px 9px;
   border-radius: 999px;
-  background-color: var(--navy);
+  background-color: var(--slate);
   color: white;
   font-size: 12px;
 }
 
 .event-tab-active .event-tab-count {
-  background-color: var(--navy-dark);
+  background-color: var(--slate-dark);
 }
 
 .queue-table {
@@ -335,7 +362,7 @@
 }
 
 .queue-table thead th {
-  background-color: var(--navy);
+  background-color: var(--slate);
   color: white;
   font-weight: 700;
   cursor: pointer;
@@ -356,7 +383,7 @@
 }
 
 .queue-table tbody tr:hover {
-  background-color: var(--orange-light);
+  background-color: var(--gold-light);
 }
 
 .queue-empty {
@@ -364,6 +391,81 @@
   color: #888;
   padding: 24px;
   font-weight: 600;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.priority-pill,
+.closed-tag {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.closed-tag {
+  background-color: #a23b2d;
+  color: white;
+}
+
+/* Dim closed queues so open ones stand out */
+.item-list li.queue-item-closed {
+  background-color: #ededed;
+}
+
+.queue-item-closed .queue-item-info,
+.queue-item-closed .count-badge {
+  opacity: 0.5;
+}
+
+.priority-low {
+  background-color: transparent;
+  color: var(--slate);
+  border-color: var(--slate);
+}
+
+.priority-medium {
+  background-color: var(--gold);
+  color: var(--slate-dark);
+}
+
+.priority-high {
+  background-color: var(--slate);
+  color: var(--gold-soft);
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.move-button {
+  padding: 4px 9px;
+  background-color: var(--slate);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.move-button:hover:not(:disabled) {
+  background-color: var(--slate-hover);
+}
+
+.move-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 @media (max-width: 900px) {

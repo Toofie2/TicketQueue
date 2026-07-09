@@ -1,9 +1,14 @@
 import { mockRevenue } from "../data/adminMockData";
 
-function AdminDashboard({ sales, queue }) {
+function AdminDashboard({ sales, setSales, queue }) {
   const totalTickets = sales.reduce((sum, s) => sum + Number(s.quantity), 0);
 
   const queueFor = (eventId) => queue.filter((u) => u.eventId === eventId);
+
+  const toggleQueue = (id) =>
+    setSales(
+      sales.map((s) => (s.id === id ? { ...s, queueOpen: !s.queueOpen } : s))
+    );
   const busiest = [...sales].sort(
     (a, b) => queueFor(b.id).length - queueFor(a.id).length
   )[0];
@@ -41,8 +46,11 @@ function AdminDashboard({ sales, queue }) {
             {sales.map((s) => {
               const q = queueFor(s.id);
               return (
-                <li key={s.id}>
-                  <div>
+                <li
+                  key={s.id}
+                  className={s.queueOpen ? "" : "queue-item-closed"}
+                >
+                  <div className="queue-item-info">
                     <strong>{s.event}</strong>
                     <span className="sale-meta">
                       {q.length > 0
@@ -50,7 +58,16 @@ function AdminDashboard({ sales, queue }) {
                         : "No one waiting"}
                     </span>
                   </div>
-                  <span className="count-badge">{q.length} waiting</span>
+                  <div className="item-actions">
+                    {!s.queueOpen && <span className="closed-tag">Closed</span>}
+                    <span className="count-badge">{q.length} waiting</span>
+                    <button
+                      className={s.queueOpen ? "kick-button" : "ghost-button"}
+                      onClick={() => toggleQueue(s.id)}
+                    >
+                      {s.queueOpen ? "Close queue" : "Open queue"}
+                    </button>
+                  </div>
                 </li>
               );
             })}

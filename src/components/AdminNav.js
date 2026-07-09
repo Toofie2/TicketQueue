@@ -8,7 +8,7 @@ function AdminNav() {
         <NavLink to="/admin" end>
           Dashboard
         </NavLink>
-        <NavLink to="/admin/services">Service Management</NavLink>
+        <NavLink to="/admin/services">Event Management</NavLink>
         <NavLink to="/admin/queue">Queue Management</NavLink>
       </div>
     </nav>

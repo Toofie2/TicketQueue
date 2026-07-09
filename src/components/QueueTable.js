@@ -7,7 +7,7 @@ const columns = [
   { key: "waitMinutes", label: "Wait" },
 ];
 
-function QueueTable({ queue, onKick }) {
+function QueueTable({ queue, onKick, onMove }) {
   const [sortKey, setSortKey] = useState("position");
   const [asc, setAsc] = useState(true);
 
@@ -52,9 +52,29 @@ function QueueTable({ queue, onKick }) {
             <td>{user.tickets}</td>
             <td>{user.waitMinutes} min</td>
             <td>
-              <button className="kick-button" onClick={() => onKick(user.id)}>
-                Kick
-              </button>
+              <div className="row-actions">
+                <button
+                  className="move-button"
+                  onClick={() => onMove(user.id, -1)}
+                  disabled={user.position === 1}
+                  aria-label="Move up"
+                  title="Move up"
+                >
+                  ▲
+                </button>
+                <button
+                  className="move-button"
+                  onClick={() => onMove(user.id, 1)}
+                  disabled={user.position === sorted.length}
+                  aria-label="Move down"
+                  title="Move down"
+                >
+                  ▼
+                </button>
+                <button className="kick-button" onClick={() => onKick(user.id)}>
+                  Kick
+                </button>
+              </div>
             </td>
           </tr>
         ))}

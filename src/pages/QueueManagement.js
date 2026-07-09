@@ -8,6 +8,23 @@ function QueueManagement({ sales, queue, setQueue }) {
 
   const kickUser = (id) => setQueue(queue.filter((u) => u.id !== id));
 
+  const moveUser = (id, dir) => {
+    const ids = eventQueue.map((u) => u.id);
+    const idx = ids.indexOf(id);
+    const target = idx + dir;
+    if (target < 0 || target >= ids.length) return;
+    const next = [...queue];
+    const gi = next.findIndex((u) => u.id === ids[idx]);
+    const gj = next.findIndex((u) => u.id === ids[target]);
+    // Swap the people, but keep each wait time tied to its queue position
+    // so the order stays sensible (an earlier spot never waits longer).
+    const a = next[gi];
+    const b = next[gj];
+    next[gi] = { ...b, waitMinutes: a.waitMinutes };
+    next[gj] = { ...a, waitMinutes: b.waitMinutes };
+    setQueue(next);
+  };
+
   const advanceQueue = () => {
     const front = eventQueue[0];
     if (front) setQueue(queue.filter((u) => u.id !== front.id));
@@ -49,7 +66,7 @@ function QueueManagement({ sales, queue, setQueue }) {
             Advance Queue
           </button>
         </div>
-        <QueueTable queue={eventQueue} onKick={kickUser} />
+        <QueueTable queue={eventQueue} onKick={kickUser} onMove={moveUser} />
       </section>
     </div>
   );
