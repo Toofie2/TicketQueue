@@ -1,0 +1,124 @@
+.app-container {
+  font-family: Arial, sans-serif;
+  background-color: #f4f7f6;
+  min-height: 100vh;
+}
+
+/* The New Blue Header */
+.header-bar {
+  background-color: #0B2046;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.header-logo {
+  color: white;
+  font-size: 2rem;
+  margin: 0;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.header-logo span {
+  color: #F26122; /* TixQ Orange */
+}
+
+/* Form Container */
+.auth-wrapper {
+  display: flex;
+  justify-content: center;
+  padding-top: 50px;
+}
+
+.auth-card {
+  width: 400px;
+  background-color: white;
+  padding: 40px 30px;
+  border-radius: 8px;
+  box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
+}
+
+/* Input Fields */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.auth-input {
+  padding: 12px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  outline: none;
+  transition: border 0.3s;
+  box-sizing: border-box;
+}
+
+.auth-input:focus {
+  border: 2px solid #007BFF; /* Changed to Blue */
+}
+
+.input-error {
+  border: 2px solid #D8000C !important;
+}
+
+/* Side-by-Side Phone Inputs */
+.phone-container {
+  display: flex;
+  gap: 10px;
+}
+
+.country-code {
+  width: 30%;
+}
+
+.mobile-number {
+  width: 70%;
+}
+
+/* Buttons and Messages */
+.auth-button {
+  width: 100%;
+  padding: 14px;
+  background-color: #0B2046;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.auth-button:hover {
+  background-color: #081630;
+}
+
+.auth-error-text {
+  color: #D8000C;
+  background-color: #FFD2D2;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.auth-success-box {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 30px;
+  border-radius: 5px;
+  text-align: center;
+}
