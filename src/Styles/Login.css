@@ -1,17 +1,17 @@
 .app-container {
   font-family: Arial, sans-serif;
-  background-color: #f4f7f6;
+  background-color: #fdfdfc;
   min-height: 100vh;
 }
 
-/* The New Blue Header */
+/* TixQ Mockup Colors: Slate Navy & Gold */
 .header-bar {
-  background-color: #0B2046;
+  background-color: #2A3B4C; 
   height: 70px;
   display: flex;
   align-items: center;
   padding: 0 40px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
 
 .header-logo {
@@ -23,7 +23,7 @@
 }
 
 .header-logo span {
-  color: #F26122; /* TixQ Orange */
+  color: #D4A373; /* Gold/Tan accent */
 }
 
 /* Form Container */
@@ -31,6 +31,7 @@
   display: flex;
   justify-content: center;
   padding-top: 50px;
+  padding-bottom: 50px;
 }
 
 .auth-card {
@@ -46,6 +47,7 @@
   display: flex;
   flex-direction: column;
   margin-bottom: 20px;
+  position: relative; /* Needed for the show/hide password button */
 }
 
 .input-group label {
@@ -60,16 +62,32 @@
   border-radius: 5px;
   border: 1px solid #ccc;
   outline: none;
-  transition: border 0.3s;
+  transition: all 0.3s;
   box-sizing: border-box;
+  width: 100%;
 }
 
+/* Highlights border Navy when typing */
 .auth-input:focus {
-  border: 2px solid #007BFF; /* Changed to Blue */
+  border: 2px solid #2A3B4C; 
 }
 
+/* Strict Red Error Highlight */
 .input-error {
   border: 2px solid #D8000C !important;
+  background-color: #FFF5F5 !important;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2A3B4C;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 /* Side-by-Side Phone Inputs */
@@ -78,30 +96,27 @@
   gap: 10px;
 }
 
-.country-code {
-  width: 30%;
-}
-
-.mobile-number {
-  width: 70%;
-}
+.country-code { width: 30%; }
+.mobile-number { width: 70%; }
 
 /* Buttons and Messages */
 .auth-button {
   width: 100%;
   padding: 14px;
-  background-color: #0B2046;
-  color: white;
+  background-color: #2A3B4C; /* Navy Background */
+  color: #D4A373; /* Gold Text */
   border: none;
   border-radius: 5px;
   cursor: pointer;
   font-weight: bold;
   font-size: 16px;
   transition: background 0.3s;
+  margin-top: 10px;
 }
 
 .auth-button:hover {
-  background-color: #081630;
+  background-color: #1d2a38;
+  color: white;
 }
 
 .auth-error-text {
@@ -121,4 +136,43 @@
   padding: 30px;
   border-radius: 5px;
   text-align: center;
+}
+
+/* SSO (Single Sign-On) Buttons */
+.sso-divider {
+  text-align: center;
+  margin: 20px 0;
+  color: #888;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.sso-divider::before, .sso-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #ddd;
+  margin: 0 10px;
+}
+
+.sso-button {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  transition: 0.3s;
+}
+
+.sso-button:hover {
+  background-color: #f4f7f6;
 }
