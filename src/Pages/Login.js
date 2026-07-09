@@ -8,10 +8,10 @@ function Login({ switchView, onLoginSuccess }) {
   const [errorField, setErrorField] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
-  // 0: Normal Login, 1: Forgot Password (Email), 2: Enter Validation Code
   const [forgotStage, setForgotStage] = useState(0); 
   const [validationCode, setValidationCode] = useState('');
-
+  
+  //Email and password regulations
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
@@ -28,8 +28,12 @@ function Login({ switchView, onLoginSuccess }) {
     if (!password) {
       setErrorField('password'); return setError('Error: Password is required.');
     }
+
+    if (!passwordRegex.test(password)) {
+      setErrorField('password'); return setError('Error: Password must be at least 8 characters, and include an uppercase letter, lowercase letter, number, and special character.');
+    }
     
-    // THIS IS THE FIX: No more alert! It instantly triggers the dashboard transition.
+    // Instantly triggers the dashboard transition if all rules pass
     onLoginSuccess(email);
   };
 
