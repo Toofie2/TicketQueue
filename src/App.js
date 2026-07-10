@@ -26,7 +26,7 @@ function App() {
   return (
     <div className="app-container">
       
-      {/* Top Smart Navigation Header */}
+      {/* Top Navigation Header */}
       <header className="header-bar">
         <div className="header-left">
           <span>🇺🇸 US</span>
