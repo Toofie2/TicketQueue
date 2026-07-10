@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar.js';
-import '../styles/Navbar.css';
 import '../styles/queue.css'; 
 
 function JoinQueue() {
@@ -21,7 +19,6 @@ function JoinQueue() {
 
     return (
         <div className="queue-page-layout">
-            <Navbar />
             <div className="queue-page-container" style={{ padding: '80px 0' }}>
                 
                 <div className="outer-box" style={{ maxWidth: '440px' }}>

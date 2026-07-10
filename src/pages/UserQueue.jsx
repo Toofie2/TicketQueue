@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Navbar from '../components/Navbar'; 
+import '../styles/queue.css';
 import Queue from '../components/Queue';  
 
 function UserQueue() {
@@ -22,7 +22,7 @@ function UserQueue() {
     if (!isInLine) {
         titleText = "You are currently out of line.";
     } else if (isTimeUp) {
-        titleText = "🛒 Your turn has arrived! Head to your cart.";
+        titleText = "🛒 Your turn has arrived!";
     }
 
     useEffect(() => {
@@ -31,7 +31,7 @@ function UserQueue() {
         if (waitTime <= 0) {
             setIsTimeUp(true);
             setUsersAhead(0);
-            toast.success("🎉 Your turn has arrived! Proceed to checkout.", {
+            toast.success("🎉 You are next in the queue, proceed to checkout.", {
                 position: "top-center",
                 autoClose: false
             });
@@ -51,7 +51,6 @@ function UserQueue() {
 
     return (
         <div className="queue-page-layout">
-            <Navbar />
             <ToastContainer />
             <Queue 
                 currentUser={currentUser}

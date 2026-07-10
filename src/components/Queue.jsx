@@ -17,7 +17,6 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
         <div className="queue-page-container">
             <div className="queue-top-text">
                 <h2>{titleText}</h2>
-                {/* 🆔 Displays the authenticated user account placeholder */}
                 {isInLine && <p className="user-id-tag">Account ID: {currentUser.id}</p>}
             </div>
             
@@ -27,8 +26,6 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
                         <div className="inner-box">
                             <h1 className="queue-label">People ahead of you:</h1>
                             <h1 className="queue-position-number">#{usersAhead}</h1>
-                            
-                            {/* 📈 NEW PROGRESS BAR LAYOUT */}
                             <div className="progress-bar-container">
                                 <div 
                                     className="progress-bar-fill" 
