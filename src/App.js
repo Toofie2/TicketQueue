@@ -39,10 +39,10 @@ function App() {
         </div>
 
         <div className="header-right">
-          <span className="nav-link" onClick={() => navigate('/')}>Home</span>
+          <span className="nav-link" onClick={() => navigate(isLoggedIn ? '/dashboard' : '/')}>Home</span>
           <span className="nav-link">Events</span>
           <span className="nav-link">Help</span>
-          <span className="nav-link" onClick={() => navigate('/queue')}>My Cart</span> 
+          <span className="nav-link" onClick={() => navigate(isLoggedIn ? '/queue' : '/login')}>My Cart</span> 
           <span className="nav-divider">|</span>
           
           {isLoggedIn ? (
