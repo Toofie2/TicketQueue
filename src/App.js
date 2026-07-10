@@ -2,14 +2,24 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import PurchaseSuccess from "./pages/PurchaseSuccess";
 import EventDetails from "./pages/EventDetails";
+import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom'; 
+import Navbar from './components/Navbar'; 
+import './styles/Login.css';
 
 function App() {
+  const [username, setUsername] = useState('Guest');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/event/:id" element={<EventDetails />} />
-      <Route path="/success" element={<PurchaseSuccess />} />
-    </Routes>
+    <div className="app-container">
+      <Navbar username={username} isLoggedIn={isLoggedIn} />
+      
+      <div className="page-router-content">
+        <Outlet context={{ username, setUsername, isLoggedIn, setIsLoggedIn }} />
+      </div>
+      
+    </div>
   );
 }
 
