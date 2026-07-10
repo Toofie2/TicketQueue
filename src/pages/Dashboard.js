@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
 import { userData } from '../data/userMockData.js';
 
-function Dashboard({ switchView, username }) {
+function Dashboard({ username }) {
+  const navigate = useNavigate();
+
   return (
     <div className="dashboard-wrapper">
       
@@ -10,11 +13,10 @@ function Dashboard({ switchView, username }) {
       <div className="profile-banner">
         <div>
           <h2>Welcome back, <span>{username}!</span></h2>
-          
         </div>
         <div className="nav-buttons">
-          <button onClick={() => switchView('history')}>View Ticket History</button>
-          <button onClick={() => switchView('login')} style={{ backgroundColor: 'transparent', color: 'white', border: '1px solid white' }}>Sign Out</button>
+          <button onClick={() => navigate('/history')}>View Ticket History</button>
+          <button onClick={() => navigate('/login')} style={{ backgroundColor: 'transparent', color: 'white', border: '1px solid white' }}>Sign Out</button>
         </div>
       </div>
 

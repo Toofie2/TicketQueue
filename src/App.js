@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom'; 
 import Login from './pages/Login';
-import History from './pages/History';
+import Register from './pages/Register';
 import './styles/Login.css';
 
 function App() {
   const [currentView, setCurrentView] = useState('login'); 
   const [username, setUsername] = useState(''); 
+  const navigate = useNavigate(); 
 
   const isLoggedIn = currentView === 'dashboard' || currentView === 'history';
 
@@ -18,6 +20,7 @@ function App() {
     
     setUsername(formattedName);
     setCurrentView('dashboard'); 
+    navigate('/dashboard'); 
   };
 
   return (
@@ -30,25 +33,25 @@ function App() {
         </div>
         
         <div className="header-center">
-          <h1 className="header-logo" onClick={() => setCurrentView(isLoggedIn ? 'dashboard' : 'login')}>
+          <h1 className="header-logo" onClick={() => { setCurrentView(isLoggedIn ? 'dashboard' : 'login'); navigate(isLoggedIn ? '/dashboard' : '/login'); }}>
             Tix<span>Q</span>
           </h1>
         </div>
 
         <div className="header-right">
-          <span className="nav-link">Home</span>
+          <span className="nav-link" onClick={() => navigate('/')}>Home</span>
           <span className="nav-link">Events</span>
           <span className="nav-link">Help</span>
-          <span className="nav-link">My Cart</span>
+          <span className="nav-link" onClick={() => navigate('/queue')}>My Cart</span> 
           <span className="nav-divider">|</span>
           
           {isLoggedIn ? (
-            <span className="nav-link" onClick={() => setCurrentView('dashboard')}>
+            <span className="nav-link" onClick={() => { setCurrentView('dashboard'); navigate('/dashboard'); }}>
               Hello {username}!
               <div className="user-avatar">👤</div>
             </span>
           ) : (
-            <span className="nav-link" onClick={() => setCurrentView('login')}>
+            <span className="nav-link" onClick={() => { setCurrentView('login'); navigate('/login'); }}>
               Sign in/Register
               <div className="user-avatar" style={{ backgroundColor: '#444' }}>👤</div>
             </span>
@@ -56,13 +59,20 @@ function App() {
         </div>
       </header>
       
-      {/* Page Routing */}
-      {currentView === 'login' && <div className="auth-wrapper"><Login switchView={() => setCurrentView('register')} onLoginSuccess={handleLoginSuccess} /></div>}
-      {currentView === 'register' && <div className="auth-wrapper"><Register switchView={() => setCurrentView('login')} /></div>}
+      <div className="page-router-content">
+        {window.location.pathname === '/' || window.location.pathname === '/login' ? (
+          <div className="auth-wrapper">
+            <Login switchView={() => navigate('/register')} onLoginSuccess={handleLoginSuccess} />
+          </div>
+        ) : window.location.pathname === '/register' ? (
+          <div className="auth-wrapper">
+            <Register switchView={() => navigate('/login')} />
+          </div>
+        ) : (
+          <Outlet />
+        )}
+      </div>
       
-      {/* Pass the username down to the Dashboard so it can say "Welcome back, {username}!" */}
-      {currentView === 'dashboard' && <Dashboard switchView={setCurrentView} username={username} />}
-      {currentView === 'history' && <History switchView={setCurrentView} />}
     </div>
   );
 }

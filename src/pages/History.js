@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
-import { userData } from '../data/userMockData.js'; // Importing your new data file!
+import { userData } from '../data/userMockData.js'; 
 
-function History({ switchView }) {
+
+function History() {
+  const navigate = useNavigate();
   return (
     <div className="dashboard-wrapper">
       
@@ -12,7 +15,7 @@ function History({ switchView }) {
           <p style={{ margin: 0, color: '#ccc' }}>A record of all your past events and queues.</p>
         </div>
         <div className="nav-buttons">
-          <button onClick={() => switchView('dashboard')}>Back to Dashboard</button>
+          <button onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
         </div>
       </div>
 
