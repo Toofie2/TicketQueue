@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import Login from './Pages/Login';
-import Register from './Pages/Register';
-import Dashboard from './Pages/Dashboard';
-import History from './Pages/History';
-import './Styles/Login.css';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import History from './pages/History';
+import './styles/Login.css';
 
 function App() {
   const [currentView, setCurrentView] = useState('login'); 

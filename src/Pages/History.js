@@ -1,6 +1,6 @@
 import React from 'react';
-import '../Styles/Dashboard.css';
-import { userData } from '../Data/userMockData.js'; // Importing your new data file!
+import '../styles/Dashboard.css';
+import { userData } from '../data/userMockData.js'; // Importing your new data file!
 
 function History({ switchView }) {
   return (

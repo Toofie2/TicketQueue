@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../Styles/Login.css';
+import '../styles/Login.css';
 
 function Register({ switchView }) {
   const [fullName, setFullName] = useState('');

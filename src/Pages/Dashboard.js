@@ -1,6 +1,6 @@
 import React from 'react';
-import '../Styles/Dashboard.css';
-import { userData } from '../Data/userMockData.js';
+import '../styles/Dashboard.css';
+import { userData } from '../data/userMockData.js';
 
 function Dashboard({ switchView, username }) {
   return (
