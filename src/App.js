@@ -7,19 +7,19 @@ import './styles/Login.css';
 
 function App() {
   const [currentView, setCurrentView] = useState('login'); 
-  const [username, setUsername] = useState(''); // New state to hold the dynamic username
+  const [username, setUsername] = useState(''); 
 
   const isLoggedIn = currentView === 'dashboard' || currentView === 'history';
 
   // Function to run when login is successful
   const handleLoginSuccess = (email) => {
-    // Extract the part before the '@' symbol
+    
     const nameFromEmail = email.split('@')[0];
-    // Capitalize the first letter so it looks nice (e.g., "harpreet" -> "Harpreet")
+    
     const formattedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
     
     setUsername(formattedName);
-    setCurrentView('dashboard'); // Automatically switch to Dashboard!
+    setCurrentView('dashboard'); 
   };
 
   return (
