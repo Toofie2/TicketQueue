@@ -1,3 +1,7 @@
+import { Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import PurchaseSuccess from "./pages/PurchaseSuccess";
+import EventDetails from "./pages/EventDetails";
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom'; 
 import Navbar from './components/Navbar'; 

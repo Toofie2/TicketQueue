@@ -1,0 +1,42 @@
+.featured-section {
+  width: 80%;
+  margin: 0 auto 35px;
+}
+
+.featured-section h2 {
+  font-size: 28px;
+  margin-bottom: 12px;
+  color: #172d3a;
+}
+
+.featured-banner {
+  height: 240px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f5efe3, #e6d4b0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.featured-text {
+  color: #172d3a;
+}
+
+.featured-small {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.featured-banner h1 {
+  font-size: 70px;
+  margin: 10px 0;
+  letter-spacing: 3px;
+}
+
+.featured-location {
+  font-size: 20px;
+  color: #555;
+}
