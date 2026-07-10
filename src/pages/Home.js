@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Navbar from "../components/Navbar";
 import SearchBar from "../components/SearchBar";
 import FeaturedBanner from "../components/FeaturedBanner";
 import EventCard from "../components/EventCard";
@@ -21,7 +20,6 @@ function Home() {
 
   return (
     <div>
-      <Navbar />
       <SearchBar
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
