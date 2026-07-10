@@ -12,7 +12,6 @@ const emptyForm = {
   quantity: "",
 };
 
-// Local YYYY-MM-DD for "today" so past dates can be blocked.
 const today = new Date().toLocaleDateString("en-CA");
 
 function ServiceManagement({ sales, setSales }) {
