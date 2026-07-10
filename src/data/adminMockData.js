@@ -1,5 +1,10 @@
 export const mockRevenue = 48250;
 
+export const adminEmails = ["admin@tixq.com"];
+
+export const isAdminEmail = (email) =>
+  adminEmails.includes((email || "").trim().toLowerCase());
+
 export const initialSales = [
   {
     id: 1,

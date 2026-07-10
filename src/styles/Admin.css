@@ -50,6 +50,23 @@
   background-color: var(--gold);
 }
 
+.admin-logout-btn {
+  margin-left: 8px;
+  color: var(--gold-light);
+  background-color: transparent;
+  border: 1px solid var(--gold);
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-logout-btn:hover {
+  color: var(--slate-dark);
+  background-color: var(--gold);
+}
+
 .admin-page {
   min-height: 100vh;
   padding: 30px 6%;
