@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
+import AdminApp from './AdminApp';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -23,6 +24,7 @@ root.render(
           <Route path="join" element={<JoinQueue />} />
           <Route path="queue" element={<UserQueueView />} />
         </Route>
+        <Route path="/admin/*" element={<AdminApp />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
