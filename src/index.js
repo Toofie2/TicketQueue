@@ -1,3 +1,6 @@
+import Home from './pages/Home';
+import EventDetails from './pages/EventDetails';
+import PurchaseSuccess from './pages/PurchaseSuccess';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -13,6 +16,7 @@ import Help from './pages/Help';
 import './index.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
 root.render(
   <React.StrictMode>
     <BrowserRouter>
@@ -26,6 +30,9 @@ root.render(
           <Route path="cart" element={<CartView />} />
           <Route path="join" element={<JoinQueue />} />
           <Route path="queue" element={<UserQueueView />} />
+          <Route index element={<Home />} />
+          <Route path="event/:id" element={<EventDetails />} />
+          <Route path="success" element={<PurchaseSuccess />} />
         </Route>
       </Routes>
     </BrowserRouter>

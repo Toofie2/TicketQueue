@@ -18,6 +18,11 @@
   z-index: 0;
 }
 
+.page-router-content {
+  position: relative;
+  z-index: 1;
+}
+
 .header-bar {
   background-color: #2A3B4C; 
   height: 70px;
