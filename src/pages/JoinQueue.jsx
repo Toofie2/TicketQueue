@@ -1,17 +1,17 @@
-import { useNavigate, useLocation } from 'react-router-dom';
-import '../styles/queue.css'; 
+import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
+import '../styles/queue.css';
 
 function JoinQueue() {
     const navigate = useNavigate();
     const location = useLocation();
-    const isLoggedIn = true; 
+    const { isLoggedIn } = useOutletContext();
     
     const handleJoinQueue = (e) => {
         e.preventDefault();
         
         if (!isLoggedIn) {
-            alert("Account required! Redirecting you to the registration portal.");
-            navigate('/register');
+            alert("Account required! Redirecting you to the login page.");
+            navigate('/login');
             return;
         }
         navigate('/queue', {
@@ -31,7 +31,7 @@ function JoinQueue() {
 
                     <form onSubmit={handleJoinQueue} style={{ display: 'flex', flexDirection: 'column' }}>
                         <button type="submit" className="success-checkout-btn" style={{ margin: 0 }}>
-                            {isLoggedIn ? "Enter Queue with My Account" : "Register to Join Queue"}
+                            {isLoggedIn ? "Enter Queue with My Account" : "Log In to Join Queue"}
                         </button>
                     </form>
                 </div>
