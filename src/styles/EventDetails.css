@@ -1,0 +1,50 @@
+.event-details-page {
+  min-height: 100vh;
+  padding: 40px 10%;
+  background-color: #ffffff;
+}
+
+.event-details-card {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 35px;
+  border-radius: 16px;
+  background-color: #f3eadc;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.event-details-card h1 {
+  color: #102f3d;
+  margin-bottom: 20px;
+}
+
+.event-details-card p {
+  font-size: 18px;
+  margin: 12px 0;
+}
+
+.ticket-section {
+  margin-top: 25px;
+}
+
+.ticket-section select {
+  margin-left: 10px;
+  padding: 6px 10px;
+}
+
+.buy-button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background-color: #102f3d;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.buy-button:hover {
+  background-color: #18465a;
+  transform: translateY(-2px);
+}
