@@ -1,7 +1,4 @@
-import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import '../styles/Navbar.css';
 import '../styles/queue.css'; 
 
 function JoinQueue() {
@@ -17,7 +14,7 @@ function JoinQueue() {
             navigate('/register');
             return;
         }
-        navigate('/cart', {
+        navigate('/queue', {
             state: location.state
         });
     };
