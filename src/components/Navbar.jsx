@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function Navbar({ username, isLoggedIn }) {
+function Navbar({ username, isLoggedIn, onLogout }) {
   const navigate = useNavigate();
   return (
     <header className="header-bar">
