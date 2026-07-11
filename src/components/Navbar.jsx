@@ -17,8 +17,8 @@ function Navbar({ username, isLoggedIn }) {
       <div className="header-right">
         <span className="nav-link" onClick={() => navigate('/')}>Home</span>
         <span className="nav-link">Events</span>
-        <span className="nav-link">Help</span>
-        <span className="nav-link" onClick={() => navigate('/join')}>My Cart</span> 
+        <span className="nav-link" onClick={() => navigate('/help')}>Help</span>
+        <span className="nav-link" onClick={() => navigate('/cart')}>My Cart</span> 
         <span className="nav-divider">|</span>
         
         {isLoggedIn ? (
