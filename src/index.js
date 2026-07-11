@@ -1,4 +1,5 @@
 import Home from './pages/Home';
+import Events from './pages/Events';
 import EventDetails from './pages/EventDetails';
 import PurchaseSuccess from './pages/PurchaseSuccess';
 import React from 'react';
@@ -32,6 +33,7 @@ root.render(
           <Route path="join" element={<JoinQueue />} />
           <Route path="queue" element={<UserQueueView />} />
           <Route index element={<Home />} />
+          <Route path="events" element={<Events />} />
           <Route path="event/:id" element={<EventDetails />} />
           <Route path="success" element={<PurchaseSuccess />} />
         </Route>
