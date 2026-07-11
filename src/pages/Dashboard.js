@@ -1,9 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import '../styles/Dashboard.css';
 import { userData } from '../data/userMockData.js';
 
-function Dashboard({ username }) {
+function Dashboard() {
+  // 1. Grab BOTH username and handleLogout from the router!
+  const { username, handleLogout } = useOutletContext();
   const navigate = useNavigate();
 
   return (
@@ -12,11 +14,13 @@ function Dashboard({ username }) {
       {/* Sleek Profile Banner */}
       <div className="profile-banner">
         <div>
-          <h2>Welcome back, <span>{username}!</span></h2>
+          {/* 2. Added a fallback here so it never just says "!" */}
+          <h2>Welcome back, <span>{username || 'Guest'}!</span></h2>
         </div>
         <div className="nav-buttons">
           <button onClick={() => navigate('/history')}>View Ticket History</button>
-          <button onClick={() => navigate('/login')} style={{ backgroundColor: 'transparent', color: 'white', border: '1px solid white' }}>Sign Out</button>
+          {/* 3. Changed this button to use handleLogout instead of just navigate */}
+          <button onClick={handleLogout} style={{ backgroundColor: 'transparent', color: 'white', border: '1px solid white' }}>Sign Out</button>
         </div>
       </div>
 
