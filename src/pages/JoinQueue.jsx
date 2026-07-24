@@ -1,19 +1,30 @@
 import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
+import { logHistoryEvent } from '../api/historyApi';
 import '../styles/queue.css';
+
+// Kept in sync with the event name shown on the queue screen (components/Queue.jsx)
+// until the queue flow is wired to a specific event.
+const QUEUE_EVENT_NAME = 'World Cup 2026: General Admission';
 
 function JoinQueue() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isLoggedIn } = useOutletContext();
-    
+    const { isLoggedIn, email } = useOutletContext();
+
     const handleJoinQueue = (e) => {
         e.preventDefault();
-        
+
         if (!isLoggedIn) {
             alert("Account required! Redirecting you to the login page.");
             navigate('/login');
             return;
         }
+
+        // History Module: log that this user joined the queue.
+        logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Joined Queue' }).catch((err) =>
+            console.error('Failed to log "Joined Queue" history event:', err)
+        );
+
         navigate('/queue', {
             state: location.state
         });

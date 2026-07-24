@@ -1,7 +1,14 @@
+import { useOutletContext } from 'react-router-dom';
+import { logHistoryEvent } from '../api/historyApi';
 import '../styles/queue.css';
 
+// Kept in sync with the event name logged when joining (pages/JoinQueue.jsx)
+// until the queue flow is wired to a specific event.
+const QUEUE_EVENT_NAME = 'World Cup 2026: General Admission';
+
 function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleText, setIsInLine, onCheckout }) {
-    
+    const { email } = useOutletContext();
+
     const totalCap = currentUser?.totalQueueCap || 1500;
     const peopleServed = totalCap - usersAhead;
     const progressPercent = Math.min(Math.floor((peopleServed / totalCap) * 100), 100);
@@ -9,8 +16,20 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
     const handleLeaveQueue = () => {
         const confirmLeave = window.confirm("Are you sure you want to leave the queue? You will lose your spot!");
         if (confirmLeave) {
+            // History Module: log that this user left the queue.
+            logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Left Queue' }).catch((err) =>
+                console.error('Failed to log "Left Queue" history event:', err)
+            );
             setIsInLine(false);
         }
+    };
+
+    const handleCheckout = () => {
+        // History Module: log that this user was served.
+        logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Served' }).catch((err) =>
+            console.error('Failed to log "Served" history event:', err)
+        );
+        onCheckout();
     };
 
     return (
@@ -48,7 +67,7 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
                         </div>
 
                         {isTimeUp ? (
-                            <button className="success-checkout-btn" onClick={onCheckout}>
+                            <button className="success-checkout-btn" onClick={handleCheckout}>
                                 Proceed to Checkout
                             </button>
                         ) : (

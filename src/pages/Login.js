@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { isAdminEmail } from '../data/adminMockData';
+import { loginUser } from '../api/authApi';
 import '../styles/Login.css';
 
 function Login() {
   // global login function from App.js context
-  const { handleLogin } = useOutletContext(); 
+  const { handleLogin } = useOutletContext();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -13,17 +13,18 @@ function Login() {
   const [error, setError] = useState('');
   const [errorField, setErrorField] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
-  const [forgotStage, setForgotStage] = useState(0); 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [forgotStage, setForgotStage] = useState(0);
   const [validationCode, setValidationCode] = useState('');
 
-  // Rules and Validations
+  // Client-side rules give instant feedback; the backend re-validates
+  // everything and is the source of truth.
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-  
-  const onLoginSubmit = (e) => {
-    e.preventDefault(); 
+  const onLoginSubmit = async (e) => {
+    e.preventDefault();
     setError(''); setErrorField('');
 
     if (!email) {
@@ -35,24 +36,25 @@ function Login() {
     if (!password) {
       setErrorField('password'); return setError('Error: Password is required.');
     }
-    if (!passwordRegex.test(password)) {
-      setErrorField('password'); return setError('Error: Password must be at least 8 characters, and include an uppercase letter, lowercase letter, number, and special character.');
-    }
 
-    // Admins skip the user flow and go straight to the admin area
-    if (isAdminEmail(email)) {
-      navigate('/admin');
-      return;
+    setIsSubmitting(true);
+    try {
+      // Authenticate against the backend Authentication Module; the role
+      // (User vs Administrator) comes back from the server.
+      const { user } = await loginUser({ email, password });
+      handleLogin(user.email, user.role);
+    } catch (err) {
+      setErrorField('password');
+      setError(`Error: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // If all your rules pass, this triggers the global login in App.js
-    handleLogin(email);
   };
 
   const handleSendCode = (e) => {
     e.preventDefault();
     setError(''); setErrorField('');
-    
+
     if (!emailRegex.test(email)) {
       setErrorField('email'); return setError('Error: Enter a valid email first.');
     }
@@ -82,7 +84,7 @@ function Login() {
           <>
             <h2 style={{ textAlign: 'center', color: '#2A3B4C', marginBottom: '20px' }}>Reset Password</h2>
             {error && <div className="auth-error-text">{error}</div>}
-            
+
             {forgotStage === 1 ? (
               <form onSubmit={handleSendCode}>
                 <div className="input-group">
@@ -113,13 +115,13 @@ function Login() {
           <>
             <h2 style={{ textAlign: 'center', color: '#2A3B4C', marginBottom: '20px' }}>Account Login</h2>
             {error && <div className="auth-error-text">{error}</div>}
-            
+
             <form onSubmit={onLoginSubmit}>
               <div className="input-group">
                 <label>Email Address</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`auth-input ${errorField === 'email' ? 'input-error' : ''}`} placeholder="name@example.com" />
               </div>
-              
+
               <div className="input-group">
                 <label>Password</label>
                 <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className={`auth-input ${errorField === 'password' ? 'input-error' : ''}`} />
@@ -130,8 +132,10 @@ function Login() {
                   <button type="button" onClick={() => { setForgotStage(1); setError(''); }} style={{ background: 'none', border: 'none', color: '#2A3B4C', cursor: 'pointer', fontSize: '12px' }}>Forgot Password?</button>
                 </div>
               </div>
-              
-              <button type="submit" className="auth-button">Sign In</button>
+
+              <button type="submit" className="auth-button" disabled={isSubmitting}>
+                {isSubmitting ? 'Signing In...' : 'Sign In'}
+              </button>
             </form>
 
             <div className="sso-divider">or continue with</div>
