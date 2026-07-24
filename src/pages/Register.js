@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { registerUser } from '../api/authApi';
 import '../styles/Login.css';
 
 function Register() {
@@ -8,18 +9,19 @@ function Register() {
   const [password, setPassword] = useState('');
   const [countryCode, setCountryCode] = useState('');
   const [phone, setPhone] = useState('');
-  
+
   const [error, setError] = useState('');
   const [errorField, setErrorField] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-  const handleRegister = (e) => {
-    e.preventDefault(); 
+  const handleRegister = async (e) => {
+    e.preventDefault();
     setError(''); setErrorField('');
 
     if (!fullName) {
@@ -34,8 +36,18 @@ function Register() {
     if (phone && phone.length !== 10) {
       setErrorField('phone'); return setError('Error: Mobile number must be exactly 10 digits.');
     }
-    
-    setIsRegistered(true);
+
+    setIsSubmitting(true);
+    try {
+      // Create the account via the backend Authentication Module.
+      await registerUser({ email, password, name: fullName });
+      setIsRegistered(true);
+    } catch (err) {
+      setErrorField('email');
+      setError(`Error: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // The Green Success Screen
@@ -60,9 +72,9 @@ function Register() {
     <div className="auth-wrapper">
       <div className="auth-card">
         <h2 style={{ textAlign: 'center', color: '#2A3B4C', marginBottom: '20px' }}>Create Account</h2>
-        
+
         {error && <div className="auth-error-text">{error}</div>}
-        
+
         <form onSubmit={handleRegister}>
           <div className="input-group">
             <label>Full Name</label>
@@ -73,7 +85,7 @@ function Register() {
             <label>Email Address</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`auth-input ${errorField === 'email' ? 'input-error' : ''}`} placeholder="name@example.com" />
           </div>
-          
+
           <div className="input-group">
             <label>Password</label>
             <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className={`auth-input ${errorField === 'password' ? 'input-error' : ''}`} />
@@ -89,8 +101,10 @@ function Register() {
               <input type="number" placeholder="10-digit number" value={phone} onChange={(e) => setPhone(e.target.value)} className={`auth-input mobile-number ${errorField === 'phone' ? 'input-error' : ''}`} />
             </div>
           </div>
-          
-          <button type="submit" className="auth-button">Register</button>
+
+          <button type="submit" className="auth-button" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating Account...' : 'Register'}
+          </button>
         </form>
 
         <div className="sso-divider">or continue with</div>
