@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom'; 
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { isAdminEmail } from '../data/adminMockData';
 import '../styles/Login.css';
 
 function Login() {
@@ -37,7 +38,13 @@ function Login() {
     if (!passwordRegex.test(password)) {
       setErrorField('password'); return setError('Error: Password must be at least 8 characters, and include an uppercase letter, lowercase letter, number, and special character.');
     }
-    
+
+    // Admins skip the user flow and go straight to the admin area
+    if (isAdminEmail(email)) {
+      navigate('/admin');
+      return;
+    }
+
     // If all your rules pass, this triggers the global login in App.js
     handleLogin(email);
   };

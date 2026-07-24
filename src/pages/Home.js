@@ -8,15 +8,24 @@ import "../styles/Home.css";
 function Home() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredEvents = events.filter((event) => {
   const searchText = searchTerm.trim().toLowerCase();
 
-  return (
-    event.title.toLowerCase().includes(searchText) ||
-    event.category.toLowerCase().includes(searchText) ||
-    event.location.toLowerCase().includes(searchText)
-  );
-});
+  // While searching, look across every event. With no search, show just one
+  // event per primary category (Sports / Music / Comedy) as a preview.
+  const filteredEvents = searchText
+    ? events.filter(
+        (event) =>
+          event.title.toLowerCase().includes(searchText) ||
+          event.category.toLowerCase().includes(searchText) ||
+          event.location.toLowerCase().includes(searchText)
+      )
+    : Object.values(
+        events.reduce((acc, event) => {
+          const primary = event.category.split(" ")[0];
+          if (!acc[primary]) acc[primary] = event;
+          return acc;
+        }, {})
+      );
 
   return (
     <div>

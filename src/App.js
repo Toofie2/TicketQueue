@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom'; 
-import Navbar from './components/Navbar'; 
+import { Outlet, useNavigate } from 'react-router-dom';
+import Navbar from './components/Navbar';
 import './styles/Login.css';
 
 function App() {
@@ -27,12 +27,12 @@ function App() {
     <div className="app-container">
       {/* Pass onLogout to the Navbar */}
       <Navbar username={username} isLoggedIn={isLoggedIn} onLogout={handleLogout} />
-      
+
       <div className="page-router-content">
         {/* Pass handleLogout down to the Dashboard via context */}
         <Outlet context={{ handleLogin, handleLogout, username, isLoggedIn }} />
       </div>
-      
+
     </div>
   );
 }

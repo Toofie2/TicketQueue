@@ -1,0 +1,56 @@
+.events-page {
+  width: 80%;
+  margin: 0 auto 40px;
+}
+
+.events-header {
+  text-align: center;
+  margin: 30px 0 10px;
+}
+
+.events-header h1 {
+  font-size: 34px;
+  font-weight: 800;
+  color: #172d3a;
+  margin: 0;
+}
+
+.events-header p {
+  color: #555;
+  margin: 8px 0 0;
+  font-size: 16px;
+}
+
+.category-filters {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.category-pill {
+  background-color: white;
+  color: #172d3a;
+  border: 1px solid #172d3a;
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.category-pill:hover {
+  transform: translateY(-2px);
+}
+
+.category-pill-active {
+  background-color: #172d3a;
+  color: white;
+}
+
+.events-count {
+  color: #555;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
