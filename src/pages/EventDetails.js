@@ -1,16 +1,38 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "../styles/EventDetails.css";
-import events from "../data/events";
+
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 function EventDetails() {
   const { id } = useParams();
-  const event = events.find((event) => event.id === Number(id));
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE}/api/events/${id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active) return;
+        setEvent(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setEvent(null);
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
   const totalPrice = event ? event.price * quantity : 0;
 
+  if (loading) return <h2 style={{ textAlign: 'center', padding: '50px' }}>Loading…</h2>;
   if (!event) return <h2 style={{ textAlign: 'center', padding: '50px' }}>Event not found.</h2>;
 
   return (
