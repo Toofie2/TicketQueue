@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import '../styles/queue.css';
 import Queue from '../components/Queue';  
 
 function UserQueue() {
+    const { username } = useOutletContext(); 
     const [currentUser] = useState({
         id: "USR-2026-X99B",
-        name: "Alex Smith",
+        name: username || "Guest Customer",
         totalQueueCap: 1500
     });
 
@@ -18,11 +18,11 @@ function UserQueue() {
     const [isInLine, setIsInLine] = useState(true);
     const navigate = useNavigate();
 
-    let titleText = "🏆 Good news! You are now in line. 🏆";
+    let titleText = `🏆 Good news, ${currentUser.name}! You are now in line. 🏆`;
     if (!isInLine) {
         titleText = "You are currently out of line.";
     } else if (isTimeUp) {
-        titleText = "🛒 Your turn has arrived!";
+        titleText = `🛒 ${currentUser.name}, your turn has arrived!`;
     }
 
     useEffect(() => {
@@ -30,9 +30,8 @@ function UserQueue() {
 
         if (waitTime <= 0) {
             setIsTimeUp(true);
-            setUsersAhead(0);
-            toast.success("🎉 You are next in the queue, proceed to checkout.", {
-                position: "top-center",
+            toast.success("🎉 Your turn has arrived! Proceed to checkout.", {
+                position: "top-right",
                 autoClose: false
             });
             return;
@@ -51,7 +50,7 @@ function UserQueue() {
 
     return (
         <div className="queue-page-layout">
-            <ToastContainer />
+            <ToastContainer position="top-right" autoClose={false} />
             <Queue 
                 currentUser={currentUser}
                 usersAhead={usersAhead} 
