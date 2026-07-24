@@ -40,6 +40,8 @@ router.put('/:id', (req, res) => {
     'expectedDuration',
     'priority',
     'venue',
+    'category',
+    'time',
     'date',
     'price',
     'quantity',

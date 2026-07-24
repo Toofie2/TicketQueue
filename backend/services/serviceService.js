@@ -62,6 +62,8 @@ export function buildService(body, id) {
     expectedDuration: Number(body.expectedDuration),
     priority: body.priority || 'Medium',
     venue: typeof body.venue === 'string' ? body.venue.trim() : '',
+    category: typeof body.category === 'string' ? body.category.trim() : '',
+    time: typeof body.time === 'string' ? body.time.trim() : '',
     date: body.date || '',
     price: body.price !== undefined && body.price !== '' ? Number(body.price) : 0,
     quantity:

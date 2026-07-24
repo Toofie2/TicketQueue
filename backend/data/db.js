@@ -24,6 +24,8 @@ const buildServices = () =>
     expectedDuration: DURATION_CYCLE[index % DURATION_CYCLE.length],
     priority: PRIORITY_CYCLE[index % PRIORITY_CYCLE.length],
     venue: event.location,
+    category: event.category,
+    time: event.time,
     date: toISODate(event.date),
     price: event.price,
     quantity: 500,

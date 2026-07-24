@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 
-// Base URL of the QueueSmart API (see /backend). Override with REACT_APP_API_URL.
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 const emptyForm = {
@@ -9,10 +8,22 @@ const emptyForm = {
   expectedDuration: "",
   priority: "Medium",
   venue: "",
+  category: "Sports",
+  time: "",
   date: "",
   price: "",
   quantity: "",
 };
+
+const CATEGORIES = ["Sports", "Music", "Comedy", "Other"];
+
+const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
+  const h24 = Math.floor(i / 2);
+  const minutes = i % 2 === 0 ? "00" : "30";
+  const period = h24 >= 12 ? "PM" : "AM";
+  const hour = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${hour}:${minutes} ${period}`;
+});
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -24,7 +35,6 @@ function ServiceManagement() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
-  // Load the service list from the API on mount.
   useEffect(() => {
     let active = true;
     fetch(`${API_BASE}/api/services`)
@@ -37,7 +47,7 @@ function ServiceManagement() {
       .catch(() => {
         if (!active) return;
         setApiError(
-          "Could not load services. Is the API running on port 4000? (cd backend && npm start)"
+          "Could not load services."
         );
         setLoading(false);
       });
@@ -51,7 +61,6 @@ function ServiceManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Client-side checks for instant feedback; the API validates too.
     if (!form.name.trim()) return setError("Event Name is required.");
     if (form.name.length > 100)
       return setError("Event Name must be 100 characters or fewer.");
@@ -84,7 +93,7 @@ function ServiceManagement() {
       setForm(emptyForm);
       setEditingId(null);
     } catch (err) {
-      setError("Could not reach the server. Is the API running on port 4000?");
+      setError("Could not reach the server.");
     }
   };
 
@@ -97,6 +106,8 @@ function ServiceManagement() {
       expectedDuration: service.expectedDuration ?? "",
       priority: service.priority ?? "Medium",
       venue: service.venue ?? "",
+      category: service.category ?? "Sports",
+      time: service.time ?? "",
       date: service.date ?? "",
       price: service.price ?? "",
       quantity: service.quantity ?? "",
@@ -190,6 +201,36 @@ function ServiceManagement() {
                 placeholder="e.g. Minute Maid Park"
               />
             </label>
+            <div className="form-row">
+              <label>
+                Category
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Time
+                <select name="time" value={form.time} onChange={handleChange}>
+                  <option value="">Select a time</option>
+                  {form.time && !TIME_SLOTS.includes(form.time) && (
+                    <option value={form.time}>{form.time}</option>
+                  )}
+                  {TIME_SLOTS.map((slot) => (
+                    <option key={slot} value={slot}>
+                      {slot}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="form-row">
               <label>
                 Date
