@@ -1,9 +1,10 @@
 // backend/routes/historyRoutes.js
 // History Module: track queue participation history for users.
 
-const express = require('express');
+import express from 'express';
+import { history, nextHistoryId } from './mockDB.js';
+
 const router = express.Router();
-const { history, nextHistoryId } = require('./mockDB');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_OUTCOMES = ['Served', 'Left Queue', 'Joined Queue'];
@@ -63,4 +64,4 @@ router.post('/', (req, res) => {
   return res.status(201).json(record);
 });
 
-module.exports = router;
+export default router;

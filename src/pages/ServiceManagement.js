@@ -1,68 +1,130 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 const emptyForm = {
-  event: "",
+  name: "",
   description: "",
-  durationMinutes: "",
-  priority: "medium",
-  contactEmail: "",
+  expectedDuration: "",
+  priority: "Medium",
   venue: "",
+  category: "Sports",
+  time: "",
   date: "",
   price: "",
   quantity: "",
 };
 
+const CATEGORIES = ["Sports", "Music", "Comedy", "Other"];
+
+const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
+  const h24 = Math.floor(i / 2);
+  const minutes = i % 2 === 0 ? "00" : "30";
+  const period = h24 >= 12 ? "PM" : "AM";
+  const hour = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${hour}:${minutes} ${period}`;
+});
+
 const today = new Date().toLocaleDateString("en-CA");
 
-function ServiceManagement({ sales, setSales }) {
+function ServiceManagement() {
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE}/api/services`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active) return;
+        setServices(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setApiError(
+          "Could not load services."
+        );
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.event.trim()) return setError("Event Name is required.");
-    if (form.event.length > 100)
+    if (!form.name.trim()) return setError("Event Name is required.");
+    if (form.name.length > 100)
       return setError("Event Name must be 100 characters or fewer.");
     if (!form.description.trim()) return setError("Description is required.");
-    if (!form.durationMinutes)
+    if (!form.expectedDuration)
       return setError("Expected Duration is required.");
-    if (Number(form.durationMinutes) <= 0)
+    if (Number(form.expectedDuration) <= 0)
       return setError("Expected Duration must be greater than 0.");
     if (form.date && form.date < today)
       return setError("Event date cannot be in the past.");
-    if (
-      form.contactEmail &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)
-    )
-      return setError("Please enter a valid contact email.");
     setError("");
-    if (editingId) {
-      setSales(sales.map((s) => (s.id === editingId ? { ...s, ...form } : s)));
-    } else {
-      setSales([...sales, { id: Date.now(), queueOpen: true, ...form }]);
+
+    try {
+      const url = editingId
+        ? `${API_BASE}/api/services/${editingId}`
+        : `${API_BASE}/api/services`;
+      const res = await fetch(url, {
+        method: editingId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) return setError(data.error || "Something went wrong.");
+
+      if (editingId) {
+        setServices((prev) => prev.map((s) => (s.id === editingId ? data : s)));
+      } else {
+        setServices((prev) => [...prev, data]);
+      }
+      setForm(emptyForm);
+      setEditingId(null);
+    } catch (err) {
+      setError("Could not reach the server.");
     }
-    setForm(emptyForm);
-    setEditingId(null);
   };
 
-  const handleEdit = (sale) => {
-    setEditingId(sale.id);
+  const handleEdit = (service) => {
+    setEditingId(service.id);
     setError("");
     setForm({
-      event: sale.event,
-      description: sale.description ?? "",
-      durationMinutes: sale.durationMinutes ?? "",
-      priority: sale.priority ?? "medium",
-      contactEmail: sale.contactEmail ?? "",
-      venue: sale.venue,
-      date: sale.date,
-      price: sale.price,
-      quantity: sale.quantity,
+      name: service.name,
+      description: service.description ?? "",
+      expectedDuration: service.expectedDuration ?? "",
+      priority: service.priority ?? "Medium",
+      venue: service.venue ?? "",
+      category: service.category ?? "Sports",
+      time: service.time ?? "",
+      date: service.date ?? "",
+      price: service.price ?? "",
+      quantity: service.quantity ?? "",
     });
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/services/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) return;
+      setServices((prev) => prev.filter((s) => s.id !== id));
+      if (editingId === id) handleCancel();
+    } catch (err) {
+      setApiError("Could not reach the server to delete.");
+    }
   };
 
   const handleCancel = () => {
@@ -78,6 +140,8 @@ function ServiceManagement({ sales, setSales }) {
         <p>Create and edit events</p>
       </header>
 
+      {apiError && <p className="form-error">{apiError}</p>}
+
       <div className="admin-grid">
         <section className="panel">
           <h2>{editingId ? "Edit Event" : "Create Event"}</h2>
@@ -85,13 +149,13 @@ function ServiceManagement({ sales, setSales }) {
             <label>
               Event Name *
               <input
-                name="event"
-                value={form.event}
+                name="name"
+                value={form.name}
                 onChange={handleChange}
                 maxLength={100}
                 placeholder="e.g. Astros vs Yankees"
               />
-              <span className="field-hint">{form.event.length}/100</span>
+              <span className="field-hint">{form.name.length}/100</span>
             </label>
             <label>
               Description *
@@ -108,8 +172,8 @@ function ServiceManagement({ sales, setSales }) {
                 Expected Duration (min) *
                 <input
                   type="number"
-                  name="durationMinutes"
-                  value={form.durationMinutes}
+                  name="expectedDuration"
+                  value={form.expectedDuration}
                   onChange={handleChange}
                   min="1"
                   placeholder="30"
@@ -122,22 +186,12 @@ function ServiceManagement({ sales, setSales }) {
                   value={form.priority}
                   onChange={handleChange}
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
                 </select>
               </label>
             </div>
-            <label>
-              Contact Email
-              <input
-                type="email"
-                name="contactEmail"
-                value={form.contactEmail}
-                onChange={handleChange}
-                placeholder="organizer@example.com"
-              />
-            </label>
             <label>
               Venue
               <input
@@ -147,6 +201,36 @@ function ServiceManagement({ sales, setSales }) {
                 placeholder="e.g. Minute Maid Park"
               />
             </label>
+            <div className="form-row">
+              <label>
+                Category
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Time
+                <select name="time" value={form.time} onChange={handleChange}>
+                  <option value="">Select a time</option>
+                  {form.time && !TIME_SLOTS.includes(form.time) && (
+                    <option value={form.time}>{form.time}</option>
+                  )}
+                  {TIME_SLOTS.map((slot) => (
+                    <option key={slot} value={slot}>
+                      {slot}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="form-row">
               <label>
                 Date
@@ -199,36 +283,50 @@ function ServiceManagement({ sales, setSales }) {
 
         <section className="panel">
           <h2>Current Events</h2>
-          <ul className="item-list item-list--light">
-            {sales.map((s) => (
-              <li key={s.id}>
-                <div>
-                  <strong>{s.event}</strong>
-                  <span className="sale-meta">{s.description}</span>
-                  <span className="sale-meta">
-                    {[
-                      s.durationMinutes ? `${s.durationMinutes} min` : null,
-                      s.venue,
-                      s.date,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </div>
-                <div className="item-actions">
-                  <span className={`priority-pill priority-${s.priority}`}>
-                    {s.priority}
-                  </span>
-                  <button
-                    className="ghost-button"
-                    onClick={() => handleEdit(s)}
-                  >
-                    Edit
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {loading ? (
+            <p className="sale-meta">Loading events…</p>
+          ) : (
+            <ul className="item-list item-list--light">
+              {services.map((s) => (
+                <li key={s.id}>
+                  <div>
+                    <strong>{s.name}</strong>
+                    <span className="sale-meta">{s.description}</span>
+                    <span className="sale-meta">
+                      {[
+                        s.expectedDuration ? `${s.expectedDuration} min` : null,
+                        s.venue,
+                        s.date,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </div>
+                  <div className="item-actions">
+                    <span
+                      className={`priority-pill priority-${String(
+                        s.priority
+                      ).toLowerCase()}`}
+                    >
+                      {s.priority}
+                    </span>
+                    <button
+                      className="ghost-button"
+                      onClick={() => handleEdit(s)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="kick-button"
+                      onClick={() => handleDelete(s.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </div>

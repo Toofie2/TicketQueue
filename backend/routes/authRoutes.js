@@ -1,10 +1,11 @@
 // backend/routes/authRoutes.js
 // Authentication Module: registration, login, and role handling (User vs Administrator).
 
-const express = require('express');
-const bcrypt = require('bcryptjs');
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import { users, ADMIN_EMAILS } from './mockDB.js';
+
 const router = express.Router();
-const { users, ADMIN_EMAILS } = require('./mockDB');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
@@ -98,4 +99,4 @@ router.post('/login', (req, res) => {
   return res.status(200).json({ message: 'Login successful!', user: toPublicUser(user) });
 });
 
-module.exports = router;
+export default router;

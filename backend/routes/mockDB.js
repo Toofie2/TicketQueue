@@ -2,7 +2,7 @@
 // In-memory "database" for the Authentication and History modules.
 // No real database is used in this assignment (A3 scope).
 
-const bcrypt = require('bcryptjs');
+import bcrypt from 'bcryptjs';
 
 // Emails in this list are treated as Administrators; everyone else is a
 // regular User. Kept here (rather than trusting a client-supplied role)
@@ -41,4 +41,4 @@ function nextHistoryId() {
 
 resetDB();
 
-module.exports = { users, history, ADMIN_EMAILS, resetDB, nextHistoryId };
+export { users, history, ADMIN_EMAILS, resetDB, nextHistoryId };

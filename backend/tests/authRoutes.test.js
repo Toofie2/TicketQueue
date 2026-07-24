@@ -1,6 +1,6 @@
-const request = require('supertest');
-const { createApp } = require('../../server');
-const { resetDB, users } = require('../mockDB');
+import request from 'supertest';
+import { createApp } from '../apiServer.js';
+import { resetDB, users } from '../routes/mockDB.js';
 
 describe('Auth API', () => {
   let app;

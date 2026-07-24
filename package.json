@@ -8,9 +8,6 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",
@@ -18,17 +15,13 @@
     "react-toastify": "^11.1.0",
     "web-vitals": "^2.1.4"
   },
-  "devDependencies": {
-    "jest": "^29.7.0",
-    "supertest": "^7.2.2"
-  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "server": "node backend/server.js",
-    "test:backend": "jest --config backend/jest.config.js",
-    "test:backend:coverage": "jest --config backend/jest.config.js --coverage",
+    "server": "npm --prefix backend start",
+    "test:backend": "npm --prefix backend test",
+    "test:backend:coverage": "npm --prefix backend run test:coverage",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
