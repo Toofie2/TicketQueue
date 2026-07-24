@@ -17,14 +17,18 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
         const confirmLeave = window.confirm("Are you sure you want to leave the queue? You will lose your spot!");
         if (confirmLeave) {
             // History Module: log that this user left the queue.
-            logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Left Queue' }).catch(() => {});
+            logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Left Queue' }).catch((err) =>
+                console.error('Failed to log "Left Queue" history event:', err)
+            );
             setIsInLine(false);
         }
     };
 
     const handleCheckout = () => {
         // History Module: log that this user was served.
-        logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Served' }).catch(() => {});
+        logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Served' }).catch((err) =>
+            console.error('Failed to log "Served" history event:', err)
+        );
         onCheckout();
     };
 

@@ -21,7 +21,9 @@ function JoinQueue() {
         }
 
         // History Module: log that this user joined the queue.
-        logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Joined Queue' }).catch(() => {});
+        logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Joined Queue' }).catch((err) =>
+            console.error('Failed to log "Joined Queue" history event:', err)
+        );
 
         navigate('/queue', {
             state: location.state
