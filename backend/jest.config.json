@@ -1,0 +1,12 @@
+{
+  "testEnvironment": "node",
+  "roots": ["<rootDir>/tests"],
+  "collectCoverageFrom": [
+    "routes/serviceRoutes.js",
+    "routes/notificationRoutes.js",
+    "services/serviceService.js",
+    "services/notificationService.js",
+    "data/db.js"
+  ],
+  "transform": {}
+}

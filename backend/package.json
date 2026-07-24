@@ -1,0 +1,21 @@
+{
+  "name": "queuesmart-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "QueueSmart REST API (A3 back end) — in-memory, no database yet.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json --coverage"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  }
+}
