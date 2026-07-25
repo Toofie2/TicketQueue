@@ -15,6 +15,7 @@ import JoinQueue from './pages/JoinQueue';
 import CartView from './pages/CartView';
 import Checkout from './pages/Checkout';
 import UserQueueView from './pages/UserQueue';
+import KickedFromQueue from './pages/KickedFromQueue';
 import Help from './pages/Help';
 import './index.css';
 
@@ -34,6 +35,7 @@ root.render(
           <Route path="checkout" element={<Checkout />} />
           <Route path="join" element={<JoinQueue />} />
           <Route path="queue" element={<UserQueueView />} />
+          <Route path="kicked" element={<KickedFromQueue />} />
           <Route index element={<Home />} />
           <Route path="events" element={<Events />} />
           <Route path="event/:id" element={<EventDetails />} />

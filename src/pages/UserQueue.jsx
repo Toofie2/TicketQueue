@@ -1,137 +1,263 @@
-import { useEffect, useRef } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import Queue from '../components/Queue';
-import { notifyReadyForCheckout } from '../api/notificationsApi';
+import { useEffect, useState, useRef } from "react";
+import {
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Queue from "../components/Queue";
+
+const API_BASE =
+  process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 function UserQueue() {
-    const navigate = useNavigate();
-    const { 
-        username, email, isLoggedIn, isInLine, setIsInLine, isTimeUp, setIsTimeUp,
-        usersAhead, waitTime, activeTicket
-    } = useOutletContext(); 
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    const userIdentifier = email || "harpreet@test.com";
-    const wasInQueueRef = useRef(false);
-    const leftRef = useRef(false);
-    const servedRef = useRef(false);
+  const {
+    username,
+    email,
+    isLoggedIn,
+  } = useOutletContext();
 
-    useEffect(() => {
-        if (!isLoggedIn) {
-            navigate('/login');
-        }
-    }, [isLoggedIn, navigate]);
+  const purchaseData = location.state;
+  const event = purchaseData?.event;
 
-    useEffect(() => {
-        if (!isInLine) return;
-        let active = true;
-        const checkStatus = () => {
-            fetch(`http://localhost:4000/api/queue/status/${encodeURIComponent(userIdentifier)}`)
-                .then((res) => {
-                    if (!active) return;
-                    if (res.status === 404) {
-                        if (wasInQueueRef.current && !leftRef.current && !servedRef.current) {
-                            servedRef.current = true;
-                            setIsTimeUp(true);
-                            notifyReadyForCheckout({
-                                userId: userIdentifier,
-                                serviceId: activeTicket?.eventId,
-                            }).catch(() => {});
-                        }
-                        return;
-                    }
-                    wasInQueueRef.current = true;
-                })
-                .catch(() => {});
-        };
-        checkStatus();
-        const timer = setInterval(checkStatus, 3000);
-        return () => {
-            active = false;
-            clearInterval(timer);
-        };
-    }, [isInLine, userIdentifier, setIsTimeUp, activeTicket]);
+  const userId =
+    purchaseData?.userId ||
+    email ||
+    username ||
+    "guest";
 
-    const handleLeaveLine = () => {
-        leftRef.current = true;
-        toast.dismiss();
-        fetch('http://localhost:4000/api/queue/success', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: userIdentifier,
-                eventTitle: activeTicket.eventTitle,
-                ticketQuantity: activeTicket.ticketQuantity,
-                outcome: "Left Queue" 
-            })
-        })
-        .then(() => {
-            setIsInLine(false);
-            navigate('/dashboard'); 
-        });
-    };
+  const [usersAhead, setUsersAhead] = useState(0);
+  const [waitTime, setWaitTime] = useState(0);
+  const [startAhead, setStartAhead] = useState(null);
+  const [tickets, setTickets] = useState(purchaseData?.quantity || 1);
+  const [isTimeUp, setIsTimeUp] = useState(false);
+  const [isInLine, setIsInLine] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const wasInLineRef = useRef(false);
 
-    let titleText = `🏆 Good news, ${username}! You are in line for ${activeTicket.ticketQuantity} ${activeTicket.eventTitle} tickets. 🏆`;
-    if (!isInLine) {
-        titleText = "You are currently out of line.";
-    } else if (isTimeUp) {
-        titleText = `🛒 ${username}, your ${activeTicket.ticketQuantity} tickets for ${activeTicket.eventTitle} are ready!`;
+  const currentUser = {
+    id: userId,
+    name: username || email || "Guest Customer",
+    totalQueueCap: 1500,
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login");
+    }
+  }, [isLoggedIn, navigate]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !isInLine || !userId) {
+      return;
     }
 
+    let active = true;
+    let notificationShown = false;
+
+    const loadQueueStatus = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/queue/status/${encodeURIComponent(userId)}` +
+            (event?.title
+              ? `?serviceId=${encodeURIComponent(event.title)}`
+              : "")
+        );
+
+        if (response.status === 404) {
+          if (!active) {
+            return;
+          }
+          if (wasInLineRef.current) {
+            navigate("/kicked");
+          } else {
+            setError("You are not currently in this queue.");
+            setLoading(false);
+          }
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+              data.message ||
+              "Unable to retrieve queue status."
+          );
+        }
+
+        if (!active) {
+          return;
+        }
+
+        wasInLineRef.current = true;
+
+        setUsersAhead(data.positionAhead);
+        setStartAhead((prev) => (prev == null ? data.positionAhead : prev));
+        setWaitTime(data.waitTime);
+        if (data.tickets) {
+          setTickets(data.tickets);
+        }
+        setError("");
+        setLoading(false);
+
+        if (data.positionAhead === 0) {
+          setIsTimeUp(true);
+
+          if (!notificationShown) {
+            toast.success(
+              "🎉 Your turn has arrived! Proceed to checkout.",
+              {
+                position: "top-right",
+                autoClose: false,
+              }
+            );
+
+            notificationShown = true;
+          }
+        } else {
+          setIsTimeUp(false);
+        }
+      } catch (err) {
+        if (!active) {
+          return;
+        }
+
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    loadQueueStatus();
+
+    const interval = setInterval(loadQueueStatus, 5000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [isLoggedIn, isInLine, userId, event, navigate]);
+
+  const handleLeaveQueue = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/queue/leave/${encodeURIComponent(
+          userId
+        )}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            data.message ||
+            "Unable to leave queue."
+        );
+      }
+
+      toast.dismiss();
+      setIsInLine(false);
+      setIsTimeUp(false);
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRejoinQueue = () => {
+    navigate("/join", {
+      state: purchaseData,
+    });
+  };
+
+  const handleCheckout = () => {
+    toast.dismiss();
+
+    navigate("/checkout", {
+      state: purchaseData,
+    });
+  };
+
+  let titleText =
+    `🏆 Good news, ${currentUser.name}! ` +
+    `You are in line for ${tickets} ` +
+    `${event?.title || "event"} ticket(s). 🏆`;
+
+  if (!isInLine) {
+    titleText = "You are currently out of line.";
+  } else if (isTimeUp) {
+    titleText =
+      `🛒 ${currentUser.name}, your ` +
+      `${tickets} ticket(s) for ` +
+      `${event?.title || "the event"} are ready!`;
+  }
+
+  if (!purchaseData || !event) {
     return (
-        <div className="queue-page-layout">
-            <ToastContainer position="top-right" autoClose={false} />
-            <style>{`
-                .outer-box button, .inner-box button, .queue-page-container button {
-                    display: none !important;
-                }
-            `}</style>
-            
-            <Queue 
-                currentUser={{ id: userIdentifier, name: username, totalQueueCap: 300 }}
-                usersAhead={usersAhead} 
-                waitTime={waitTime} 
-                isTimeUp={isTimeUp} 
-                isInLine={isInLine}
-                titleText={titleText}
-                setIsInLine={setIsInLine}
-            />
-            
-            {isInLine && (
-                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px' }}>
-                    {isTimeUp && (
-                        <button 
-                            className="success-checkout-btn"
-                            style={{ margin: 0, padding: '12px 24px', backgroundColor: '#c59648', width: 'auto' }}
-                            onClick={() => {
-                                toast.dismiss();
-                                setIsTimeUp(false);
-                                navigate('/checkout');
-                            }} 
-                        >
-                            Proceed to Checkout 🛒
-                        </button>
-                    )}
-                    
-                    <button 
-                        className="success-checkout-btn" 
-                        style={{ 
-                            margin: 0, 
-                            padding: '12px 24px', 
-                            backgroundColor: 'transparent', 
-                            border: '2px solid #d8000c', 
-                            color: '#d8000c',
-                            width: 'auto'
-                        }}
-                        onClick={handleLeaveLine} 
-                    >
-                        Leave Queue / Cancel
-                    </button>
-                </div>
-            )}
-        </div>
+      <div style={{ textAlign: "center", padding: "60px" }}>
+        <h2>Queue information is missing.</h2>
+
+        <button onClick={() => navigate("/events")}>
+          Return to Events
+        </button>
+      </div>
     );
+  }
+
+  if (loading) {
+    return (
+      <h2 style={{ textAlign: "center", padding: "60px" }}>
+        Loading queue status...
+      </h2>
+    );
+  }
+
+  return (
+    <div className="queue-page-layout">
+      <ToastContainer
+        position="top-right"
+        autoClose={false}
+      />
+
+      {error && (
+        <p
+          style={{
+            color: "red",
+            textAlign: "center",
+            paddingTop: "20px",
+          }}
+        >
+          {error}
+        </p>
+      )}
+
+      <Queue
+        currentUser={currentUser}
+        usersAhead={usersAhead}
+        startAhead={startAhead}
+        waitTime={waitTime}
+        isTimeUp={isTimeUp}
+        isInLine={isInLine}
+        titleText={titleText}
+        eventTitle={event.title}
+        quantity={tickets}
+        totalPrice={purchaseData.totalPrice}
+        onLeaveQueue={handleLeaveQueue}
+        onRejoinQueue={handleRejoinQueue}
+        onCheckout={handleCheckout}
+      />
+    </div>
+  );
 }
 
 export default UserQueue;

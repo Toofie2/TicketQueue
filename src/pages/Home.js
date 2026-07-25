@@ -1,27 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
 import FeaturedBanner from "../components/FeaturedBanner";
 import EventCard from "../components/EventCard";
-import events from "../data/events";
 import "../styles/Home.css";
 
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
+
 function Home() {
+  const [events, setEvents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${API_BASE}/api/events`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (active && Array.isArray(data)) setEvents(data);
+      })
+      .catch(() => {
+        if (active) setEvents([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const searchText = searchTerm.trim().toLowerCase();
 
-  // While searching, look across every event. With no search, show just one
-  // event per primary category (Sports / Music / Comedy) as a preview.
   const filteredEvents = searchText
     ? events.filter(
         (event) =>
           event.title.toLowerCase().includes(searchText) ||
-          event.category.toLowerCase().includes(searchText) ||
+          (event.category || "").toLowerCase().includes(searchText) ||
           event.location.toLowerCase().includes(searchText)
       )
     : Object.values(
         events.reduce((acc, event) => {
-          const primary = event.category.split(" ")[0];
+          const primary = (event.category || "").split(" ")[0];
           if (!acc[primary]) acc[primary] = event;
           return acc;
         }, {})

@@ -33,6 +33,7 @@ function Dashboard() {
   const [activeQueues, setActiveQueues] = useState([]);
   const [isLoadingQueues, setIsLoadingQueues] = useState(true);
   const [notifications, setNotifications] = useState([]);
+  const [queuePositions, setQueuePositions] = useState({});
 
   useEffect(() => {
     if (!isLoggedIn || !email) {
@@ -40,15 +41,18 @@ function Dashboard() {
       return;
     }
     let isCancelled = false;
-    fetchNotifications(email)
-      .then((items) => {
-        if (!isCancelled) setNotifications(items);
-      })
-      .catch(() => {
-        if (!isCancelled) setNotifications([]);
-      });
+    const load = () => {
+      fetchNotifications(email)
+        .then((items) => {
+          if (!isCancelled) setNotifications(items);
+        })
+        .catch(() => {});
+    };
+    load();
+    const timer = setInterval(load, 5000);
     return () => {
       isCancelled = true;
+      clearInterval(timer);
     };
   }, [email, isLoggedIn]);
 
@@ -66,7 +70,24 @@ function Dashboard() {
     // exactly what "active" means.
     fetchHistory(email)
       .then((records) => {
-        if (!isCancelled) setActiveQueues(deriveActiveQueues(records));
+        if (isCancelled) return;
+        const active = deriveActiveQueues(records);
+        setActiveQueues(active);
+        active.forEach((q) => {
+          fetch(
+            `/api/queue/status/${encodeURIComponent(email)}?serviceId=${encodeURIComponent(q.event)}`
+          )
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (!isCancelled && data) {
+                setQueuePositions((prev) => ({
+                  ...prev,
+                  [q.event]: data.positionAhead,
+                }));
+              }
+            })
+            .catch(() => {});
+        });
       })
       .catch(() => {
         if (!isCancelled) setActiveQueues([]);
@@ -74,6 +95,7 @@ function Dashboard() {
       .finally(() => {
         if (!isCancelled) setIsLoadingQueues(false);
       });
+
 
     return () => {
       isCancelled = true;
@@ -111,7 +133,20 @@ function Dashboard() {
                 return (
                   <div
                     key={note.id}
-                    onClick={isCheckout ? () => navigate('/queue') : undefined}
+                    onClick={
+                      isCheckout
+                        ? () => {
+                            fetch(`/api/events/${note.serviceId}`)
+                              .then((res) => (res.ok ? res.json() : null))
+                              .then((ev) =>
+                                navigate('/queue', {
+                                  state: ev ? { event: ev, userId: email } : undefined,
+                                })
+                              )
+                              .catch(() => navigate('/queue'));
+                          }
+                        : undefined
+                    }
                     style={{ marginBottom: '15px', color: '#555', fontSize: '14px', paddingBottom: '10px', borderBottom: '1px solid #eee', cursor: isCheckout ? 'pointer' : 'default' }}
                   >
                     🔔 {note.message}
@@ -153,10 +188,23 @@ function Dashboard() {
                 <div>
                   <h4 style={{ margin: '0 0 5px 0', color: '#2A3B4C', fontSize: '1.2rem' }}>{queue.event}</h4>
                   <span style={{ color: '#888', fontSize: '14px' }}>Joined on {queue.date}</span>
+                  {queuePositions[queue.event] != null && (
+                    <div style={{ color: '#2A3B4C', fontSize: '14px', marginTop: '4px', fontWeight: 'bold' }}>
+                      {queuePositions[queue.event]} {queuePositions[queue.event] === 1 ? 'person' : 'people'} ahead of you
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <button
-                    onClick={() => navigate('/queue')}
+                    onClick={() =>
+                      navigate('/queue', {
+                        state: {
+                          event: { title: queue.event },
+                          quantity: 1,
+                          userId: email,
+                        },
+                      })
+                    }
                     style={{ background: 'none', border: '1px solid #2A3B4C', color: '#2A3B4C', borderRadius: '6px', padding: '8px 14px', cursor: 'pointer' }}
                   >
                     View Queue

@@ -48,7 +48,7 @@ function QueueManagement() {
 
   const eventQueue = queue
     .filter((u) => u.serviceId === selectedEvent)
-    .map((u, i) => ({ ...u, waitMinutes: i * 15 }));
+    .map((u, i) => ({ ...u, waitMinutes: i }));
 
   const kickUser = (id) => {
     fetch(`${API_BASE}/api/queue/leave/${encodeURIComponent(id)}`, {
@@ -61,24 +61,6 @@ function QueueManagement() {
   const advanceQueue = () => {
     const front = eventQueue[0];
     if (front) kickUser(front.id);
-  };
-
-  const moveUser = (id, dir) => {
-    setQueue((prev) => {
-      const eventIds = prev
-        .filter((u) => u.serviceId === selectedEvent)
-        .map((u) => u.id);
-      const idx = eventIds.indexOf(id);
-      const target = idx + dir;
-      if (target < 0 || target >= eventIds.length) return prev;
-      const next = [...prev];
-      const gi = next.findIndex((u) => u.id === eventIds[idx]);
-      const gj = next.findIndex((u) => u.id === eventIds[target]);
-      const swap = next[gi];
-      next[gi] = next[gj];
-      next[gj] = swap;
-      return next;
-    });
   };
 
   return (
@@ -119,7 +101,7 @@ function QueueManagement() {
             Advance Queue
           </button>
         </div>
-        <QueueTable queue={eventQueue} onKick={kickUser} onMove={moveUser} />
+        <QueueTable queue={eventQueue} onKick={kickUser} />
       </section>
     </div>
   );
