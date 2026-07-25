@@ -34,6 +34,21 @@ function ServiceManagement() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
+  const isOpen = (s) => s.queueOpen !== false;
+  const toggleQueue = async (s) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/services/${s.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ queueOpen: !isOpen(s) }),
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      setServices((prev) => prev.map((x) => (x.id === s.id ? data : x)));
+    } catch (err) {
+      setApiError("Could not update the queue status.");
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -288,7 +303,7 @@ function ServiceManagement() {
           ) : (
             <ul className="item-list item-list--light">
               {services.map((s) => (
-                <li key={s.id}>
+                <li key={s.id} className={isOpen(s) ? "" : "queue-item-closed"}>
                   <div>
                     <strong>{s.name}</strong>
                     <span className="sale-meta">{s.description}</span>
@@ -303,6 +318,7 @@ function ServiceManagement() {
                     </span>
                   </div>
                   <div className="item-actions">
+                    {!isOpen(s) && <span className="closed-tag">Closed</span>}
                     <span
                       className={`priority-pill priority-${String(
                         s.priority
@@ -310,6 +326,12 @@ function ServiceManagement() {
                     >
                       {s.priority}
                     </span>
+                    <button
+                      className={isOpen(s) ? "kick-button" : "ghost-button"}
+                      onClick={() => toggleQueue(s)}
+                    >
+                      {isOpen(s) ? "Close queue" : "Open queue"}
+                    </button>
                     <button
                       className="ghost-button"
                       onClick={() => handleEdit(s)}

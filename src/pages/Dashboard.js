@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import '../styles/Dashboard.css';
 import { userData } from '../data/userMockData.js';
 import { fetchHistory } from '../api/historyApi';
+import { fetchNotifications } from '../api/notificationsApi';
 
 // A queue is "active" if the most recent history event for that event name
 // is a join with no later leave/served event after it.
@@ -31,7 +32,29 @@ function Dashboard() {
 
   const [activeQueues, setActiveQueues] = useState([]);
   const [isLoadingQueues, setIsLoadingQueues] = useState(true);
-  const [queuePosition, setQueuePosition] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [queuePositions, setQueuePositions] = useState({});
+
+  useEffect(() => {
+    if (!isLoggedIn || !email) {
+      setNotifications([]);
+      return;
+    }
+    let isCancelled = false;
+    const load = () => {
+      fetchNotifications(email)
+        .then((items) => {
+          if (!isCancelled) setNotifications(items);
+        })
+        .catch(() => {});
+    };
+    load();
+    const timer = setInterval(load, 5000);
+    return () => {
+      isCancelled = true;
+      clearInterval(timer);
+    };
+  }, [email, isLoggedIn]);
 
   useEffect(() => {
     if (!isLoggedIn || !email) {
@@ -47,25 +70,30 @@ function Dashboard() {
     // exactly what "active" means.
     fetchHistory(email)
       .then((records) => {
-        if (!isCancelled) setActiveQueues(deriveActiveQueues(records));
+        if (isCancelled) return;
+        const active = deriveActiveQueues(records);
+        setActiveQueues(active);
+        active.forEach((q) => {
+          fetch(
+            `/api/queue/status/${encodeURIComponent(email)}?serviceId=${encodeURIComponent(q.event)}`
+          )
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (!isCancelled && data) {
+                setQueuePositions((prev) => ({
+                  ...prev,
+                  [q.event]: data.positionAhead,
+                }));
+              }
+            })
+            .catch(() => {});
+        });
       })
       .catch(() => {
         if (!isCancelled) setActiveQueues([]);
       })
       .finally(() => {
         if (!isCancelled) setIsLoadingQueues(false);
-      });
-
-    fetch('/api/queue/admin/current')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((queue) => {
-        if (isCancelled || !Array.isArray(queue)) return;
-        const index = queue.findIndex((entry) => entry.userId === email);
-        setQueuePosition(index === -1 ? null : { event: queue[index].serviceId, positionAhead: index });
-      })
-      .catch((err) => {
-        console.error('Failed to load queue position:', err);
-        if (!isCancelled) setQueuePosition(null);
       });
 
 
@@ -97,18 +125,50 @@ function Dashboard() {
         <div className="left-column">
           <div className="dash-panel" style={{ marginBottom: '30px' }}>
             <h3>Recent Notifications</h3>
-            {userData.notifications.map(note => (
-              <div key={note.id} style={{ marginBottom: '15px', color: '#555', fontSize: '14px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-                🔔 {note.message}
-              </div>
-            ))}
+            {notifications.length === 0 ? (
+              <p style={{ color: '#888', fontStyle: 'italic', fontSize: '14px' }}>No notifications yet.</p>
+            ) : (
+              [...notifications].reverse().slice(0, 3).map(note => {
+                const isCheckout = note.type === 'ready-checkout';
+                return (
+                  <div
+                    key={note.id}
+                    onClick={
+                      isCheckout
+                        ? () => {
+                            fetch(`/api/events/${note.serviceId}`)
+                              .then((res) => (res.ok ? res.json() : null))
+                              .then((ev) =>
+                                navigate('/queue', {
+                                  state: ev ? { event: ev, userId: email } : undefined,
+                                })
+                              )
+                              .catch(() => navigate('/queue'));
+                          }
+                        : undefined
+                    }
+                    style={{ marginBottom: '15px', color: '#555', fontSize: '14px', paddingBottom: '10px', borderBottom: '1px solid #eee', cursor: isCheckout ? 'pointer' : 'default' }}
+                  >
+                    🔔 {note.message}
+                  </div>
+                );
+              })
+            )}
           </div>
 
           <div className="dash-panel">
             <h3>Featured Services</h3>
             {userData.activeServices.map(service => (
-              <div key={service.id} className="list-item" style={{ borderLeftColor: '#2A3B4C' }}>
+              <div
+                key={service.id}
+                className="list-item"
+                style={{ borderLeftColor: '#2A3B4C', cursor: service.eventId ? 'pointer' : 'default' }}
+                onClick={() => service.eventId && navigate(`/event/${service.eventId}`)}
+              >
                 <div><strong>{service.name}</strong><br/><span style={{ fontSize: '12px', color: '#888' }}>{service.status}</span></div>
+                {service.eventId && (
+                  <span style={{ fontSize: '12px', color: '#2A3B4C', fontWeight: 'bold' }}>View →</span>
+                )}
               </div>
             ))}
           </div>
@@ -128,15 +188,23 @@ function Dashboard() {
                 <div>
                   <h4 style={{ margin: '0 0 5px 0', color: '#2A3B4C', fontSize: '1.2rem' }}>{queue.event}</h4>
                   <span style={{ color: '#888', fontSize: '14px' }}>Joined on {queue.date}</span>
-                  {queuePosition && queuePosition.event === queue.event && (
+                  {queuePositions[queue.event] != null && (
                     <div style={{ color: '#2A3B4C', fontSize: '14px', marginTop: '4px', fontWeight: 'bold' }}>
-                      {queuePosition.positionAhead} {queuePosition.positionAhead === 1 ? 'person' : 'people'} ahead of you
+                      {queuePositions[queue.event]} {queuePositions[queue.event] === 1 ? 'person' : 'people'} ahead of you
                     </div>
                   )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <button
-                    onClick={() => navigate('/queue')}
+                    onClick={() =>
+                      navigate('/queue', {
+                        state: {
+                          event: { title: queue.event },
+                          quantity: 1,
+                          userId: email,
+                        },
+                      })
+                    }
                     style={{ background: 'none', border: '1px solid #2A3B4C', color: '#2A3B4C', borderRadius: '6px', padding: '8px 14px', cursor: 'pointer' }}
                   >
                     View Queue

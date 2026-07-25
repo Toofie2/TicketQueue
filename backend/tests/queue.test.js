@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import queueRouter from '../routes/queueRoutes.js';
-import { db } from '../data/userMockData.js';
+import { db } from '../data/db.js';
 
 const app = express();
 app.use(express.json());

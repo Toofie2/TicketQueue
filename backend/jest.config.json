@@ -3,6 +3,7 @@
   "roots": ["<rootDir>/tests"],
   "collectCoverageFrom": [
     "routes/serviceRoutes.js",
+    "routes/eventRoutes.js",
     "routes/notificationRoutes.js",
     "routes/authRoutes.js",
     "routes/historyRoutes.js",

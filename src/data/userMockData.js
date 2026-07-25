@@ -11,6 +11,6 @@ export const userData = {
   ],
   activeServices: [
     { id: 201, name: "Super Bowl LXI", status: "Queue opens in 2 hours" },
-    { id: 202, name: "Formula 1 Miami", status: "Open now" }
+    { id: 202, name: "Formula 1 Miami", status: "Open now", eventId: 13 }
   ]
 };

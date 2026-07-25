@@ -1,31 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import QueueTable from "../components/QueueTable";
 
-function QueueManagement({ sales, queue, setQueue }) {
-  const [selectedEventId, setSelectedEventId] = useState(sales[0]?.id ?? null);
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
-  const eventQueue = queue.filter((u) => u.eventId === selectedEventId);
+function QueueManagement() {
+  const [services, setServices] = useState([]);
+  const [queue, setQueue] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [error, setError] = useState("");
 
-  const kickUser = (id) => setQueue(queue.filter((u) => u.id !== id));
+  const loadQueue = useCallback(() => {
+    fetch(`${API_BASE}/api/queue/admin/current`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!Array.isArray(data)) return;
+        setQueue(
+          data
+            .map((q) => ({
+              id: q.userId || q.email,
+              name: q.name || q.userId || "Guest",
+              serviceId: q.serviceId,
+              priority: q.priority,
+              tickets: q.tickets || 1,
+              joinedAt: q.joinedAt,
+            }))
+            .sort((a, b) => new Date(a.joinedAt) - new Date(b.joinedAt))
+        );
+      })
+      .catch(() => setError("Could not reach the queue API on port 4000."));
+  }, []);
 
-  const moveUser = (id, dir) => {
-    const ids = eventQueue.map((u) => u.id);
-    const idx = ids.indexOf(id);
-    const target = idx + dir;
-    if (target < 0 || target >= ids.length) return;
-    const next = [...queue];
-    const gi = next.findIndex((u) => u.id === ids[idx]);
-    const gj = next.findIndex((u) => u.id === ids[target]);
-    const a = next[gi];
-    const b = next[gj];
-    next[gi] = { ...b, waitMinutes: a.waitMinutes };
-    next[gj] = { ...a, waitMinutes: b.waitMinutes };
-    setQueue(next);
+  useEffect(() => {
+    fetch(`${API_BASE}/api/services`)
+      .then((res) => res.json())
+      .then((data) => {
+        setServices(data);
+        setSelectedEvent((prev) => prev ?? data[0]?.name ?? null);
+      })
+      .catch(() => setError("Could not load services."));
+  }, []);
+
+  useEffect(() => {
+    loadQueue();
+    const timer = setInterval(loadQueue, 5000);
+    return () => clearInterval(timer);
+  }, [loadQueue]);
+
+  const eventQueue = queue
+    .filter((u) => u.serviceId === selectedEvent)
+    .map((u, i) => ({ ...u, waitMinutes: i }));
+
+  const kickUser = (id) => {
+    fetch(`${API_BASE}/api/queue/leave/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    })
+      .then(() => loadQueue())
+      .catch(() => setError("Could not remove the user from the queue."));
   };
 
   const advanceQueue = () => {
     const front = eventQueue[0];
-    if (front) setQueue(queue.filter((u) => u.id !== front.id));
+    if (front) kickUser(front.id);
   };
 
   return (
@@ -35,18 +70,20 @@ function QueueManagement({ sales, queue, setQueue }) {
         <p>Pick an event to manage the queue</p>
       </header>
 
+      {error && <p className="form-error">{error}</p>}
+
       <div className="event-tabs">
-        {sales.map((s) => {
-          const count = queue.filter((u) => u.eventId === s.id).length;
+        {services.map((s) => {
+          const count = queue.filter((u) => u.serviceId === s.name).length;
           return (
             <button
               key={s.id}
               className={`event-tab ${
-                s.id === selectedEventId ? "event-tab-active" : ""
+                s.name === selectedEvent ? "event-tab-active" : ""
               }`}
-              onClick={() => setSelectedEventId(s.id)}
+              onClick={() => setSelectedEvent(s.name)}
             >
-              {s.event}
+              {s.name}
               <span className="event-tab-count">{count}</span>
             </button>
           );
@@ -64,7 +101,7 @@ function QueueManagement({ sales, queue, setQueue }) {
             Advance Queue
           </button>
         </div>
-        <QueueTable queue={eventQueue} onKick={kickUser} onMove={moveUser} />
+        <QueueTable queue={eventQueue} onKick={kickUser} />
       </section>
     </div>
   );

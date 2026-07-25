@@ -5,7 +5,7 @@ import { users, history, nextHistoryId } from './mockDB.js';
 const router = express.Router();
 
 router.post('/join', (req, res) => {
-  const { userId, serviceId, priority } = req.body;
+  const { userId, serviceId, priority, tickets } = req.body;
 
   if (!userId || !serviceId) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -20,6 +20,7 @@ router.post('/join', (req, res) => {
     name: resolvedName,
     email: resolvedEmail,
     priority: priority || "Medium",
+    tickets: tickets || 1,
     joinedAt: new Date()
   });
 
@@ -28,17 +29,29 @@ router.post('/join', (req, res) => {
 
 router.get('/status/:userId', (req, res) => {
   const { userId } = req.params;
-  const position = db.queue.findIndex(q => q.userId === userId || q.email === userId) + 1;
-  if (position === 0) {
+  const { serviceId } = req.query;
+  const belongsToUser = (q) => q.userId === userId || q.email === userId;
+  const userEntry = db.queue.find(
+    (q) => belongsToUser(q) && (!serviceId || q.serviceId === serviceId)
+  );
+  if (!userEntry) {
     return res.status(404).json({ message: "User not currently in line" });
   }
-  const estimatedWait = (position - 1) * 15;
-  res.json({ positionAhead: position - 1, waitTime: estimatedWait });
+  const sameEvent = db.queue.filter(q => q.serviceId === userEntry.serviceId);
+  const positionAhead = sameEvent.findIndex(belongsToUser);
+  const estimatedWait = positionAhead * 1;
+  res.json({ positionAhead, waitTime: estimatedWait, tickets: userEntry.tickets || 1 });
 });
 
 router.delete('/leave/:userId', (req, res) => {
   const { userId } = req.params;
-  db.queue = db.queue.filter(q => q.userId !== userId && q.email !== userId);
+  const { serviceId } = req.query;
+  db.queue = db.queue.filter((q) => {
+    const isUser = q.userId === userId || q.email === userId;
+    if (!isUser) return true;
+    if (serviceId && q.serviceId !== serviceId) return true;
+    return false;
+  });
   res.json({ message: "Left queue successfully" });
 });
 

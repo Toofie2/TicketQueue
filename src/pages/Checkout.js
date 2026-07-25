@@ -3,6 +3,8 @@ import { logHistoryEvent } from '../api/historyApi';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import '../styles/queue.css';
 
+const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
+
 function Checkout() {
   const { email, activeTicket, setIsInLine, setIsTimeUp } = useOutletContext();
   const navigate = useNavigate();
@@ -15,7 +17,14 @@ function Checkout() {
     e.preventDefault();
     const userIdentifier = email || "harpreet@test.com";
 
-    // History Module: log that this user was served once payment is confirmed.
+    fetch(
+      `${API_BASE}/api/queue/leave/${encodeURIComponent(userIdentifier)}` +
+        (activeTicket?.eventTitle
+          ? `?serviceId=${encodeURIComponent(activeTicket.eventTitle)}`
+          : ""),
+      { method: "DELETE" }
+    ).catch(() => {});
+
     logHistoryEvent({ email: userIdentifier, event: activeTicket.eventTitle, outcome: 'Served' })
       .catch((err) => console.error('Failed to log "Served" history event:', err))
       .finally(() => {

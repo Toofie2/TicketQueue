@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   useLocation,
   useNavigate,
@@ -32,10 +32,13 @@ function UserQueue() {
 
   const [usersAhead, setUsersAhead] = useState(0);
   const [waitTime, setWaitTime] = useState(0);
+  const [startAhead, setStartAhead] = useState(null);
+  const [tickets, setTickets] = useState(purchaseData?.quantity || 1);
   const [isTimeUp, setIsTimeUp] = useState(false);
   const [isInLine, setIsInLine] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const wasInLineRef = useRef(false);
 
   const currentUser = {
     id: userId,
@@ -60,10 +63,24 @@ function UserQueue() {
     const loadQueueStatus = async () => {
       try {
         const response = await fetch(
-          `${API_BASE}/api/queue/status/${encodeURIComponent(
-            userId
-          )}`
+          `${API_BASE}/api/queue/status/${encodeURIComponent(userId)}` +
+            (event?.title
+              ? `?serviceId=${encodeURIComponent(event.title)}`
+              : "")
         );
+
+        if (response.status === 404) {
+          if (!active) {
+            return;
+          }
+          if (wasInLineRef.current) {
+            navigate("/kicked");
+          } else {
+            setError("You are not currently in this queue.");
+            setLoading(false);
+          }
+          return;
+        }
 
         const data = await response.json();
 
@@ -79,8 +96,14 @@ function UserQueue() {
           return;
         }
 
+        wasInLineRef.current = true;
+
         setUsersAhead(data.positionAhead);
+        setStartAhead((prev) => (prev == null ? data.positionAhead : prev));
         setWaitTime(data.waitTime);
+        if (data.tickets) {
+          setTickets(data.tickets);
+        }
         setError("");
         setLoading(false);
 
@@ -119,7 +142,7 @@ function UserQueue() {
       active = false;
       clearInterval(interval);
     };
-  }, [isLoggedIn, isInLine, userId]);
+  }, [isLoggedIn, isInLine, userId, event, navigate]);
 
   const handleLeaveQueue = async () => {
     try {
@@ -160,14 +183,14 @@ function UserQueue() {
   const handleCheckout = () => {
     toast.dismiss();
 
-    navigate("/success", {
+    navigate("/checkout", {
       state: purchaseData,
     });
   };
 
   let titleText =
     `🏆 Good news, ${currentUser.name}! ` +
-    `You are in line for ${purchaseData?.quantity || 1} ` +
+    `You are in line for ${tickets} ` +
     `${event?.title || "event"} ticket(s). 🏆`;
 
   if (!isInLine) {
@@ -175,7 +198,7 @@ function UserQueue() {
   } else if (isTimeUp) {
     titleText =
       `🛒 ${currentUser.name}, your ` +
-      `${purchaseData?.quantity || 1} ticket(s) for ` +
+      `${tickets} ticket(s) for ` +
       `${event?.title || "the event"} are ready!`;
   }
 
@@ -221,12 +244,13 @@ function UserQueue() {
       <Queue
         currentUser={currentUser}
         usersAhead={usersAhead}
+        startAhead={startAhead}
         waitTime={waitTime}
         isTimeUp={isTimeUp}
         isInLine={isInLine}
         titleText={titleText}
         eventTitle={event.title}
-        quantity={purchaseData.quantity}
+        quantity={tickets}
         totalPrice={purchaseData.totalPrice}
         onLeaveQueue={handleLeaveQueue}
         onRejoinQueue={handleRejoinQueue}

@@ -29,17 +29,36 @@ const buildServices = () =>
     date: toISODate(event.date),
     price: event.price,
     quantity: 500,
+    queueOpen: true,
   }));
+
+const MOCK_PEOPLE = [
+  { name: 'Ava Martinez', priority: 'High' },
+  { name: 'Liam Chen', priority: 'Medium' },
+  { name: 'Noah Patel', priority: 'Low' },
+];
+
+const buildQueue = () =>
+  buildServices().flatMap((service) =>
+    MOCK_PEOPLE.map((person, i) => ({
+      userId: `mock-${service.id}-${i}`,
+      email: `mock-${service.id}-${i}@demo.com`,
+      serviceId: service.name,
+      name: person.name,
+      priority: person.priority,
+      joinedAt: new Date(),
+    }))
+  );
 
 export const db = {
   services: buildServices(),
-  queue: [],
+  queue: buildQueue(),
   notifications: [],
 };
 
 export const resetDb = () => {
   db.services = buildServices();
-  db.queue = [];
+  db.queue = buildQueue();
   db.notifications = [];
 };
 

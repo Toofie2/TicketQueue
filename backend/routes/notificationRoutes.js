@@ -3,6 +3,7 @@ import { db } from '../data/db.js';
 import {
   notifyQueueJoin,
   notifyAlmostServed,
+  notifyReadyForCheckout,
   isAlmostServed,
 } from '../services/notificationService.js';
 
@@ -35,6 +36,15 @@ router.post('/check-position', (req, res) => {
     return res.status(201).json({ triggered: true, notification });
   }
   res.json({ triggered: false, message: 'User is not close to being served yet.' });
+});
+
+router.post('/ready-checkout', (req, res) => {
+  const { userId, serviceId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  const notification = notifyReadyForCheckout(userId, serviceId);
+  res.status(201).json(notification);
 });
 
 router.patch('/:id/read', (req, res) => {

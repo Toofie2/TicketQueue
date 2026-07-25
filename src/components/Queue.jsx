@@ -5,6 +5,7 @@ import "../styles/queue.css";
 function Queue({
   currentUser,
   usersAhead,
+  startAhead,
   waitTime,
   isTimeUp,
   isInLine,
@@ -18,13 +19,15 @@ function Queue({
 }) {
   const { email } = useOutletContext();
 
-  const totalCap = currentUser?.totalQueueCap || 1500;
-  const peopleServed = Math.max(totalCap - usersAhead, 0);
-
-  const progressPercent = Math.min(
-    Math.floor((peopleServed / totalCap) * 100),
-    100
-  );
+  const progressPercent =
+    usersAhead === 0
+      ? 100
+      : startAhead && startAhead > 0
+        ? Math.min(
+            Math.floor(((startAhead - usersAhead) / startAhead) * 100),
+            100
+          )
+        : 0;
 
   const handleLeaveQueue = () => {
     const confirmLeave = window.confirm(
@@ -50,17 +53,6 @@ function Queue({
   };
 
   const handleCheckout = () => {
-    logHistoryEvent({
-      email,
-      event: eventTitle,
-      outcome: "Served",
-    }).catch((err) =>
-      console.error(
-        'Failed to log "Served" history event:',
-        err
-      )
-    );
-
     onCheckout();
   };
 
@@ -110,9 +102,11 @@ function Queue({
                 Tickets: {quantity}
               </p>
 
-              <p style={{ color: "white" }}>
-                Total: ${totalPrice}
-              </p>
+              {typeof totalPrice === "number" && (
+                <p style={{ color: "white" }}>
+                  Total: ${totalPrice}
+                </p>
+              )}
             </div>
 
             <div className="wait-time-box">
