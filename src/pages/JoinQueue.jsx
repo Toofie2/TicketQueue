@@ -1,9 +1,9 @@
+import { useState } from "react";
 import {
   useLocation,
   useNavigate,
   useOutletContext,
 } from "react-router-dom";
-import { useState } from "react";
 import { logHistoryEvent } from "../api/historyApi";
 import "../styles/queue.css";
 
@@ -13,20 +13,34 @@ const API_BASE =
 function JoinQueue() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, username, email } = useOutletContext();
+
+  const {
+    isLoggedIn,
+    username,
+    email,
+    setActiveTicket,
+    setIsTimeUp,
+    setSecondsElapsed,
+    setIsInLine,
+  } = useOutletContext();
 
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
 
   const purchaseData = location.state;
   const event = purchaseData?.event;
-  const userId = username || email || "guest";
+
+  const quantity = purchaseData?.quantity || 1;
+  const totalPrice = purchaseData?.totalPrice || 0;
+  const userId = email || username || "guest";
 
   const handleJoinQueue = async (e) => {
     e.preventDefault();
 
     if (!isLoggedIn) {
-      alert("Account required! Redirecting you to the login page.");
+      alert(
+        "Account required! Redirecting you to the login page."
+      );
       navigate("/login");
       return;
     }
@@ -42,24 +56,55 @@ function JoinQueue() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE}/api/queue/join`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId,
-          serviceId: event.id,
-          priority: event.priority || "Medium",
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE}/api/queue/join`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId,
+            serviceId: event.id,
+            priority: event.priority || "Medium",
+            name: username || "Demo User",
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error || data.message || "Unable to join queue."
+          data.error ||
+            data.message ||
+            "Unable to join queue."
         );
+      }
+
+      const activeTicket = {
+        event,
+        eventTitle: event.title,
+        quantity,
+        ticketQuantity: quantity,
+        totalPrice,
+        finalPrice: totalPrice,
+      };
+
+      if (setActiveTicket) {
+        setActiveTicket(activeTicket);
+      }
+
+      if (setIsTimeUp) {
+        setIsTimeUp(false);
+      }
+
+      if (setSecondsElapsed) {
+        setSecondsElapsed(0);
+      }
+
+      if (setIsInLine) {
+        setIsInLine(true);
       }
 
       logHistoryEvent({
@@ -90,72 +135,138 @@ function JoinQueue() {
     <div className="queue-page-layout">
       <div
         className="queue-page-container"
-        style={{ padding: "80px 0" }}
+        style={{ padding: "60px 0" }}
       >
-        <div className="outer-box" style={{ maxWidth: "440px" }}>
+        <div
+          className="outer-box"
+          style={{
+            maxWidth: "460px",
+            width: "90%",
+          }}
+        >
           <div
             className="inner-box"
             style={{
-              borderBottom: "none",
-              paddingBottom: 0,
+              borderBottom:
+                "1px solid rgba(197, 150, 72, 0.2)",
+              paddingBottom: "20px",
             }}
           >
             <h2
               className="queue-label"
-              style={{ fontSize: "1.5rem" }}
+              style={{
+                fontSize: "1.6rem",
+                color: "#c59648",
+                margin: 0,
+              }}
             >
-              Ready to join the line?
+              Ticket Confirmation
             </h2>
-
-            {event && (
-              <div
-                style={{
-                  marginTop: "16px",
-                  textAlign: "center",
-                  color: "white",
-                }}
-              >
-                <p>
-                  <strong>{event.title}</strong>
-                </p>
-
-                <p>Tickets: {purchaseData.quantity}</p>
-
-                <p>Total: ${purchaseData.totalPrice}</p>
-              </div>
-            )}
-
-            {error && (
-              <p
-                style={{
-                  color: "red",
-                  textAlign: "center",
-                  marginTop: "12px",
-                }}
-              >
-                {error}
-              </p>
-            )}
           </div>
+
+          <div
+            style={{
+              padding: "20px",
+              textAlign: "left",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "0.95rem",
+              }}
+            >
+              <span style={{ color: "#98a69d" }}>
+                Selected Event:
+              </span>
+
+              <strong
+                style={{
+                  color: "#ffffff",
+                  textAlign: "right",
+                  maxWidth: "240px",
+                }}
+              >
+                {event?.title || "Event unavailable"}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "0.95rem",
+              }}
+            >
+              <span style={{ color: "#98a69d" }}>
+                Ticket Quantity:
+              </span>
+
+              <strong style={{ color: "#ffffff" }}>
+                {quantity}x Tickets
+              </strong>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "0.95rem",
+              }}
+            >
+              <span style={{ color: "#98a69d" }}>
+                Estimated Total:
+              </span>
+
+              <strong
+                style={{
+                  color: "#c59648",
+                  fontSize: "1.1rem",
+                }}
+              >
+                ${totalPrice}
+              </strong>
+            </div>
+          </div>
+
+          {error && (
+            <p
+              style={{
+                color: "red",
+                textAlign: "center",
+                margin: "0 20px 16px",
+              }}
+            >
+              {error}
+            </p>
+          )}
 
           <form
             onSubmit={handleJoinQueue}
             style={{
               display: "flex",
               flexDirection: "column",
+              padding: "0 20px 20px",
             }}
           >
             <button
               type="submit"
               className="success-checkout-btn"
-              style={{ margin: 0 }}
+              style={{
+                margin: 0,
+                width: "100%",
+              }}
               disabled={joining}
             >
               {!isLoggedIn
                 ? "Log In to Join Queue"
                 : joining
                   ? "Joining Queue..."
-                  : "Enter Queue with My Account"}
+                  : "Secure Position in Line"}
             </button>
           </form>
         </div>

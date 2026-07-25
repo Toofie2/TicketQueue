@@ -14,11 +14,21 @@ const API_BASE =
 function UserQueue() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { username } = useOutletContext();
+
+  const {
+    username,
+    email,
+    isLoggedIn,
+  } = useOutletContext();
 
   const purchaseData = location.state;
   const event = purchaseData?.event;
-  const userId = purchaseData?.userId || username || "guest";
+
+  const userId =
+    purchaseData?.userId ||
+    email ||
+    username ||
+    "guest";
 
   const [usersAhead, setUsersAhead] = useState(0);
   const [waitTime, setWaitTime] = useState(0);
@@ -29,12 +39,20 @@ function UserQueue() {
 
   const currentUser = {
     id: userId,
-    name: username || "Guest Customer",
+    name: username || email || "Guest Customer",
     totalQueueCap: 1500,
   };
 
   useEffect(() => {
-    if (!isInLine || !userId) return;
+    if (!isLoggedIn) {
+      navigate("/login");
+    }
+  }, [isLoggedIn, navigate]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !isInLine || !userId) {
+      return;
+    }
 
     let active = true;
     let notificationShown = false;
@@ -42,7 +60,9 @@ function UserQueue() {
     const loadQueueStatus = async () => {
       try {
         const response = await fetch(
-          `${API_BASE}/api/queue/status/${encodeURIComponent(userId)}`
+          `${API_BASE}/api/queue/status/${encodeURIComponent(
+            userId
+          )}`
         );
 
         const data = await response.json();
@@ -55,7 +75,9 @@ function UserQueue() {
           );
         }
 
-        if (!active) return;
+        if (!active) {
+          return;
+        }
 
         setUsersAhead(data.positionAhead);
         setWaitTime(data.waitTime);
@@ -80,7 +102,9 @@ function UserQueue() {
           setIsTimeUp(false);
         }
       } catch (err) {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
 
         setError(err.message);
         setLoading(false);
@@ -95,18 +119,14 @@ function UserQueue() {
       active = false;
       clearInterval(interval);
     };
-  }, [isInLine, userId]);
+  }, [isLoggedIn, isInLine, userId]);
 
   const handleLeaveQueue = async () => {
-    const confirmLeave = window.confirm(
-      "Are you sure you want to leave the queue? You will lose your spot!"
-    );
-
-    if (!confirmLeave) return;
-
     try {
       const response = await fetch(
-        `${API_BASE}/api/queue/leave/${encodeURIComponent(userId)}`,
+        `${API_BASE}/api/queue/leave/${encodeURIComponent(
+          userId
+        )}`,
         {
           method: "DELETE",
         }
@@ -116,10 +136,13 @@ function UserQueue() {
 
       if (!response.ok) {
         throw new Error(
-          data.error || data.message || "Unable to leave queue."
+          data.error ||
+            data.message ||
+            "Unable to leave queue."
         );
       }
 
+      toast.dismiss();
       setIsInLine(false);
       setIsTimeUp(false);
       setError("");
@@ -135,23 +158,32 @@ function UserQueue() {
   };
 
   const handleCheckout = () => {
+    toast.dismiss();
+
     navigate("/success", {
       state: purchaseData,
     });
   };
 
-  let titleText = `🏆 Good news, ${currentUser.name}! You are now in line. 🏆`;
+  let titleText =
+    `🏆 Good news, ${currentUser.name}! ` +
+    `You are in line for ${purchaseData?.quantity || 1} ` +
+    `${event?.title || "event"} ticket(s). 🏆`;
 
   if (!isInLine) {
     titleText = "You are currently out of line.";
   } else if (isTimeUp) {
-    titleText = `🛒 ${currentUser.name}, your turn has arrived!`;
+    titleText =
+      `🛒 ${currentUser.name}, your ` +
+      `${purchaseData?.quantity || 1} ticket(s) for ` +
+      `${event?.title || "the event"} are ready!`;
   }
 
   if (!purchaseData || !event) {
     return (
       <div style={{ textAlign: "center", padding: "60px" }}>
         <h2>Queue information is missing.</h2>
+
         <button onClick={() => navigate("/events")}>
           Return to Events
         </button>
@@ -169,7 +201,10 @@ function UserQueue() {
 
   return (
     <div className="queue-page-layout">
-      <ToastContainer position="top-right" autoClose={false} />
+      <ToastContainer
+        position="top-right"
+        autoClose={false}
+      />
 
       {error && (
         <p

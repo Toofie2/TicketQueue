@@ -1,5 +1,5 @@
-import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import "../styles/EventDetails.css";
 
 const API_BASE =
@@ -19,13 +19,17 @@ function EventDetails() {
     fetch(`${API_BASE}/api/events/${id}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
 
         setEvent(data);
         setLoading(false);
       })
       .catch(() => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
 
         setEvent(null);
         setLoading(false);
@@ -45,7 +49,11 @@ function EventDetails() {
       totalPrice,
     };
 
-    localStorage.setItem("cartItem", JSON.stringify(cartItem));
+    localStorage.setItem(
+      "cartItem",
+      JSON.stringify(cartItem)
+    );
+
     navigate("/cart");
   };
 
@@ -105,7 +113,9 @@ function EventDetails() {
             Ticket Quantity:
             <select
               value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
+              onChange={(e) =>
+                setQuantity(Number(e.target.value))
+              }
             >
               <option value={1}>1</option>
               <option value={2}>2</option>
@@ -116,21 +126,27 @@ function EventDetails() {
 
           <h3>Total: ${totalPrice}</h3>
 
-          <div style={{ display: "flex", gap: "12px", marginTop: "10px" }}>
-  <button
-    className="buy-button"
-    onClick={handleBuyNow}
-  >
-    Buy Now
-  </button>
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              marginTop: "10px",
+            }}
+          >
+            <button
+              className="buy-button"
+              onClick={handleBuyNow}
+            >
+              Buy Now
+            </button>
 
-  <button
-    className="buy-button"
-    onClick={handleAddToCart}
-  >
-    Add to Cart
-  </button>
-</div>
+            <button
+              className="buy-button"
+              onClick={handleAddToCart}
+            >
+              Add to Cart
+            </button>
+          </div>
         </div>
       </div>
     </div>
