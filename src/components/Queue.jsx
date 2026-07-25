@@ -4,10 +4,9 @@ import '../styles/queue.css';
 
 // Kept in sync with the event name logged when joining (pages/JoinQueue.jsx)
 // until the queue flow is wired to a specific event.
-const QUEUE_EVENT_NAME = 'World Cup 2026: General Admission';
-
-function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleText, setIsInLine, onCheckout }) {
+function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleText, eventTitle, setIsInLine, onCheckout }) {
     const { email } = useOutletContext();
+    const displayEventTitle = eventTitle || 'Your Event';
 
     const totalCap = currentUser?.totalQueueCap || 150;
     const peopleServed = totalCap - usersAhead;
@@ -17,7 +16,7 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
         const confirmLeave = window.confirm("Are you sure you want to leave the queue? You will lose your spot!");
         if (confirmLeave) {
             // History Module: log that this user left the queue.
-            logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Left Queue' }).catch((err) =>
+            logHistoryEvent({ email, event: displayEventTitle, outcome: 'Left Queue' }).catch((err) =>
                 console.error('Failed to log "Left Queue" history event:', err)
             );
             setIsInLine(false);
@@ -26,7 +25,7 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
 
     const handleCheckout = () => {
         // History Module: log that this user was served.
-        logHistoryEvent({ email, event: QUEUE_EVENT_NAME, outcome: 'Served' }).catch((err) =>
+        logHistoryEvent({ email, event: displayEventTitle, outcome: 'Served' }).catch((err) =>
             console.error('Failed to log "Served" history event:', err)
         );
         onCheckout();
@@ -54,7 +53,7 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
                             <p className="progress-text">{progressPercent}% of the line processed</p>
 
                             <h1 className="queue-subtitle" style={{ marginTop: '15px' }}>
-                                World Cup 2026: General Admission
+                                {displayEventTitle}
                             </h1>
                         </div>
                         

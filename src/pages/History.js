@@ -9,6 +9,7 @@ function History() {
   const [ticketHistory, setTicketHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   useEffect(() => {
     if (!isLoggedIn || !email) {
@@ -55,6 +56,17 @@ function History() {
         {isLoggedIn && isLoading && <p style={{ color: '#888', fontStyle: 'italic' }}>Loading history...</p>}
         {isLoggedIn && error && <p style={{ color: '#c0392b' }}>{error}</p>}
 
+        {isLoggedIn && !isLoading && !error && ticketHistory.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+            <button
+              onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
+              style={{ background: 'none', border: '1px solid #2A3B4C', color: '#2A3B4C', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer', fontSize: '13px' }}
+            >
+              Date: {sortOrder === 'desc' ? 'Newest first' : 'Oldest first'} ⇅
+            </button>
+          </div>
+        )}
+
         {isLoggedIn && !isLoading && !error && (
           <table className="history-table">
             <thead>
@@ -65,7 +77,11 @@ function History() {
               </tr>
             </thead>
             <tbody>
-              {ticketHistory.map((item) => (
+              {[...ticketHistory]
+                .sort((a, b) =>
+                  sortOrder === 'desc' ? new Date(b.date) - new Date(a.date) : new Date(a.date) - new Date(b.date)
+                )
+                .map((item) => (
                 <tr key={item.id}>
                   <td>{item.date}</td>
                   <td><strong>{item.event}</strong></td>

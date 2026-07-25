@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logHistoryEvent } from '../api/historyApi';
 import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import '../styles/queue.css';
 
@@ -25,7 +26,7 @@ function JoinQueue() {
     };
     
     useEffect(() => {
-        fetch(`http://localhost:5000/api/queue/admin/current`)
+      fetch(`/api/queue/admin/current`)
             .then(res => res.ok ? res.json() : null)
             .then(data => {
                 if (Array.isArray(data)) {
@@ -50,7 +51,12 @@ function JoinQueue() {
         setSecondsElapsed(0); 
         setIsInLine(true); 
 
-        fetch('http://localhost:5000/api/queue/join', {
+        // History Module: log that this user joined the queue.
+        logHistoryEvent({ email, event: ticketInfo.eventTitle, outcome: 'Joined Queue' }).catch((err) =>
+            console.error('Failed to log "Joined Queue" history event:', err)
+        );
+
+        fetch('/api/queue/join', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -71,6 +77,8 @@ function JoinQueue() {
             console.log("Backend offline, launching demo fallback lines:", err);
             navigate('/queue', { state: ticketInfo }); 
         });
+
+        
     };
 
   return (

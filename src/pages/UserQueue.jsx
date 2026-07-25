@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom'; 
+import { logHistoryEvent } from '../api/historyApi';
 import { ToastContainer, toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css';
 import Queue from '../components/Queue';  
@@ -20,21 +21,14 @@ function UserQueue() {
     }, [isLoggedIn, navigate]);
 
     const handleLeaveLine = () => {
-        toast.dismiss(); 
-        fetch('http://localhost:5000/api/queue/success', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: userIdentifier,
-                eventTitle: activeTicket.eventTitle,
-                ticketQuantity: activeTicket.ticketQuantity,
-                outcome: "Left Queue" 
-            })
-        })
-        .then(() => {
-            setIsInLine(false);
-            navigate('/dashboard'); 
-        });
+        toast.dismiss();
+        // History Module: log that this user left the queue.
+        logHistoryEvent({ email: userIdentifier, event: activeTicket.eventTitle, outcome: 'Left Queue' })
+            .catch((err) => console.error('Failed to log "Left Queue" history event:', err))
+            .finally(() => {
+                setIsInLine(false);
+                navigate('/dashboard');
+            });
     };
 
     let titleText = `🏆 Good news, ${username}! You are in line for ${activeTicket.ticketQuantity} ${activeTicket.eventTitle} tickets. 🏆`;
@@ -60,6 +54,7 @@ function UserQueue() {
                 isTimeUp={isTimeUp} 
                 isInLine={isInLine}
                 titleText={titleText}
+                eventTitle={activeTicket.eventTitle}
                 setIsInLine={setIsInLine}
             />
             
