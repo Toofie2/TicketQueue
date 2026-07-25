@@ -21,3 +21,17 @@ export async function notifyQueueJoin({ userId, serviceId }) {
   }
   return body;
 }
+
+export async function notifyReadyForCheckout({ userId, serviceId }) {
+  if (!userId) return null;
+  const res = await fetch('/api/notifications/ready-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, serviceId }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.error || 'Unable to create notification.');
+  }
+  return body;
+}

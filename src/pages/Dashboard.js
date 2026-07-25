@@ -106,11 +106,18 @@ function Dashboard() {
             {notifications.length === 0 ? (
               <p style={{ color: '#888', fontStyle: 'italic', fontSize: '14px' }}>No notifications yet.</p>
             ) : (
-              [...notifications].reverse().slice(0, 3).map(note => (
-                <div key={note.id} style={{ marginBottom: '15px', color: '#555', fontSize: '14px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-                  🔔 {note.message}
-                </div>
-              ))
+              [...notifications].reverse().slice(0, 3).map(note => {
+                const isCheckout = note.type === 'ready-checkout';
+                return (
+                  <div
+                    key={note.id}
+                    onClick={isCheckout ? () => navigate('/queue') : undefined}
+                    style={{ marginBottom: '15px', color: '#555', fontSize: '14px', paddingBottom: '10px', borderBottom: '1px solid #eee', cursor: isCheckout ? 'pointer' : 'default' }}
+                  >
+                    🔔 {note.message}
+                  </div>
+                );
+              })
             )}
           </div>
 

@@ -27,6 +27,23 @@ describe('POST /api/notifications/queue-join', () => {
   });
 });
 
+describe('POST /api/notifications/ready-checkout', () => {
+  test('creates a ready-checkout notification', async () => {
+    const res = await request(app)
+      .post('/api/notifications/ready-checkout')
+      .send({ userId: 'u1', serviceId: 1 });
+    expect(res.status).toBe(201);
+    expect(res.body.type).toBe('ready-checkout');
+  });
+
+  test('400 when userId is missing', async () => {
+    const res = await request(app)
+      .post('/api/notifications/ready-checkout')
+      .send({ serviceId: 1 });
+    expect(res.status).toBe(400);
+  });
+});
+
 describe('POST /api/notifications/check-position', () => {
   test('triggers when the user is close to being served', async () => {
     const res = await request(app)

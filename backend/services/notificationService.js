@@ -50,3 +50,15 @@ export function notifyAlmostServed(userId, serviceId, position) {
     )}. Get ready — you're almost up!`,
   });
 }
+
+export function notifyReadyForCheckout(userId, serviceId) {
+  const name = serviceId ? serviceName(serviceId) : null;
+  return createNotification({
+    userId,
+    serviceId: serviceId || null,
+    type: 'ready-checkout',
+    message: name
+      ? `It's your turn for ${name}! Click here to proceed to checkout.`
+      : `It's your turn! Click here to proceed to checkout.`,
+  });
+}

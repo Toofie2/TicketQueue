@@ -11,6 +11,7 @@ const toEvent = (service) => ({
   time: service.time || '',
   location: service.venue,
   price: service.price,
+  queueOpen: service.queueOpen !== false,
 });
 
 router.get('/', (req, res) => {

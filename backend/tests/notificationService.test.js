@@ -3,6 +3,7 @@ import {
   createNotification,
   notifyQueueJoin,
   notifyAlmostServed,
+  notifyReadyForCheckout,
   isAlmostServed,
   ALMOST_THRESHOLD,
 } from '../services/notificationService.js';
@@ -54,5 +55,20 @@ describe('notifyAlmostServed', () => {
     const notification = notifyAlmostServed('u1', 1, 2);
     expect(notification.type).toBe('almost-served');
     expect(notification.message).toContain('#2');
+  });
+});
+
+describe('notifyReadyForCheckout', () => {
+  test('uses the service name when a serviceId is given', () => {
+    const notification = notifyReadyForCheckout('u1', 1);
+    expect(notification.type).toBe('ready-checkout');
+    expect(notification.message).toContain(db.services[0].name);
+  });
+
+  test('falls back to a generic message without a serviceId', () => {
+    const notification = notifyReadyForCheckout('u1');
+    expect(notification.type).toBe('ready-checkout');
+    expect(notification.serviceId).toBeNull();
+    expect(notification.message).toMatch(/your turn/i);
   });
 });

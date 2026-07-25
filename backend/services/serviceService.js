@@ -70,5 +70,6 @@ export function buildService(body, id) {
       body.quantity !== undefined && body.quantity !== ''
         ? Number(body.quantity)
         : 0,
+    queueOpen: body.queueOpen !== undefined ? body.queueOpen : true,
   };
 }

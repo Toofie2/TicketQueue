@@ -35,6 +35,18 @@ function EventDetails() {
   if (loading) return <h2 style={{ textAlign: 'center', padding: '50px' }}>Loading…</h2>;
   if (!event) return <h2 style={{ textAlign: 'center', padding: '50px' }}>Event not found.</h2>;
 
+  const handleBuyNow = () => {
+    navigate("/join", {
+      state: {
+        hasClickedBuy: true,
+        eventId: event.id,
+        eventTitle: event.title,
+        ticketQuantity: quantity,
+        finalPrice: totalPrice
+      }
+    });
+  };
+
   return (
     <div className="event-details-page">
       <div className="event-details-card">
@@ -61,10 +73,7 @@ function EventDetails() {
 
         <h3>Total: ${totalPrice}</h3>
 
-        <button
-          className="buy-button"
-          onClick={() => navigate("/join", { state: { event } })}
-        >
+        <button className="buy-button" onClick={handleBuyNow}>
           Buy Now
         </button>
       </div>

@@ -45,6 +45,7 @@ router.put('/:id', (req, res) => {
     'date',
     'price',
     'quantity',
+    'queueOpen',
   ];
   for (const key of fields) {
     if (req.body[key] === undefined) continue;
