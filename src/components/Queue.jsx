@@ -9,7 +9,7 @@ const QUEUE_EVENT_NAME = 'World Cup 2026: General Admission';
 function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleText, setIsInLine, onCheckout }) {
     const { email } = useOutletContext();
 
-    const totalCap = currentUser?.totalQueueCap || 1500;
+    const totalCap = currentUser?.totalQueueCap || 150;
     const peopleServed = totalCap - usersAhead;
     const progressPercent = Math.min(Math.floor((peopleServed / totalCap) * 100), 100);
 
@@ -61,7 +61,7 @@ function Queue({ currentUser, usersAhead, waitTime, isTimeUp, isInLine, titleTex
                         <div className="wait-time-box">
                             <h3>Your estimated wait time: 
                                 <span className="wait-time-minutes"> 
-                                    {waitTime > 0 ? `${waitTime} mins` : "0 mins!"}
+                                    {waitTime}
                                 </span>
                             </h3>
                         </div>
