@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import History from './pages/History';
 import JoinQueue from './pages/JoinQueue';
 import CartView from './pages/CartView';
+import Checkout from './pages/Checkout';
 import UserQueueView from './pages/UserQueue';
 import Help from './pages/Help';
 import './index.css';
@@ -30,6 +31,7 @@ root.render(
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="history" element={<History />} />
           <Route path="cart" element={<CartView />} />
+          <Route path="checkout" element={<Checkout />} />
           <Route path="join" element={<JoinQueue />} />
           <Route path="queue" element={<UserQueueView />} />
           <Route index element={<Home />} />

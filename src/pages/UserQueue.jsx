@@ -1,71 +1,48 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useOutletContext, useLocation } from 'react-router-dom'; 
-import { ToastContainer, toast } from 'react-toastify';
+import { useEffect } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom'; 
+import { ToastContainer, toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css';
 import Queue from '../components/Queue';  
 
 function UserQueue() {
-    const { username } = useOutletContext(); 
     const navigate = useNavigate();
-    const location = useLocation(); 
+    const { 
+        username, email, isLoggedIn, isInLine, setIsInLine, isTimeUp, setIsTimeUp,
+        usersAhead, waitTime, activeTicket
+    } = useOutletContext(); 
 
-    const ticketInfo = location.state || {
-        eventTitle: "Standard Event Entry Pass",
-        ticketQuantity: 1,
-        finalPrice: 0
-    };
+    const userIdentifier = email || "harpreet@test.com";
 
-    const [currentUser] = useState({
-        id: "USR-2026-X99B",
-        name: username || "Guest Customer",
-        totalQueueCap: 1500
-    });
-
-    const [usersAhead, setUsersAhead] = useState(1245);
-    const [waitTime, setWaitTime] = useState(1);
-    const [isTimeUp, setIsTimeUp] = useState(false);
-    const [isInLine, setIsInLine] = useState(true);
+    useEffect(() => {
+        if (!isLoggedIn) {
+            navigate('/login');
+        }
+    }, [isLoggedIn, navigate]);
 
     const handleLeaveLine = () => {
-        fetch(`http://localhost:5000/api/queue/leave/USR-2026-X99B`, {
-            method: 'DELETE'
+        toast.dismiss(); 
+        fetch('http://localhost:5000/api/queue/success', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: userIdentifier,
+                eventTitle: activeTicket.eventTitle,
+                ticketQuantity: activeTicket.ticketQuantity,
+                outcome: "Left Queue" 
+            })
         })
         .then(() => {
             setIsInLine(false);
             navigate('/dashboard'); 
-        })
-        .catch(err => console.log("Backend offline, executing fallback route", err));
+        });
     };
 
-    let titleText = `🏆 Good news, ${currentUser.name}! You are in line for ${ticketInfo.ticketQuantity}x ${ticketInfo.eventTitle}. 🏆`;
+    let titleText = `🏆 Good news, ${username}! You are in line for ${activeTicket.ticketQuantity} ${activeTicket.eventTitle} tickets. 🏆`;
     if (!isInLine) {
         titleText = "You are currently out of line.";
     } else if (isTimeUp) {
-        titleText = `🛒 ${currentUser.name}, your ${ticketInfo.ticketQuantity} tickets for ${ticketInfo.eventTitle} are ready!`;
+        titleText = `🛒 ${username}, your ${activeTicket.ticketQuantity} tickets for ${activeTicket.eventTitle} are ready!`;
     }
-
-    useEffect(() => {
-        if (!isInLine) return;
-
-        if (waitTime <= 0) {
-            setIsTimeUp(true);
-            toast.success("🎉 Your turn has arrived! Proceed to checkout.", {
-                position: "top-right",
-                autoClose: false
-            });
-            return;
-        }
-
-        const timer = setInterval(() => {
-            setWaitTime((prevTime) => prevTime - 1);
-            setUsersAhead((prevAhead) => {
-                const remaining = prevAhead - Math.floor(Math.random() * 50 + 20);
-                return remaining > 0 ? remaining : 0;
-            });
-        }, 60000); 
-
-        return () => clearInterval(timer);
-    }, [waitTime, isInLine]);
 
     return (
         <div className="queue-page-layout">
@@ -75,8 +52,9 @@ function UserQueue() {
                     display: none !important;
                 }
             `}</style>
+            
             <Queue 
-                currentUser={currentUser}
+                currentUser={{ id: userIdentifier, name: username, totalQueueCap: 300 }}
                 usersAhead={usersAhead} 
                 waitTime={waitTime} 
                 isTimeUp={isTimeUp} 
@@ -84,17 +62,23 @@ function UserQueue() {
                 titleText={titleText}
                 setIsInLine={setIsInLine}
             />
+            
             {isInLine && (
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px' }}>
                     {isTimeUp && (
                         <button 
                             className="success-checkout-btn"
                             style={{ margin: 0, padding: '12px 24px', backgroundColor: '#c59648', width: 'auto' }}
-                            onClick={() => navigate('/success', { state: ticketInfo })}
+                            onClick={() => {
+                                toast.dismiss();
+                                setIsTimeUp(false);
+                                navigate('/checkout');
+                            }} 
                         >
                             Proceed to Checkout 🛒
                         </button>
                     )}
+                    
                     <button 
                         className="success-checkout-btn" 
                         style={{ 
@@ -105,11 +89,10 @@ function UserQueue() {
                             color: '#d8000c',
                             width: 'auto'
                         }}
-                        onClick={handleLeaveLine}
+                        onClick={handleLeaveLine} 
                     >
                         Leave Queue / Cancel
                     </button>
-
                 </div>
             )}
         </div>
