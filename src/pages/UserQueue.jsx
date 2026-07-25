@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Queue from '../components/Queue';  
+import Queue from '../components/Queue';
+import { notifyQueueJoin } from '../api/notificationsApi';
 
 function UserQueue() {
-    const { username } = useOutletContext(); 
+    const { username, email } = useOutletContext();
     const [currentUser] = useState({
         id: "USR-2026-X99B",
         name: username || "Guest Customer",
@@ -17,6 +18,20 @@ function UserQueue() {
     const [isTimeUp, setIsTimeUp] = useState(false);
     const [isInLine, setIsInLine] = useState(true);
     const navigate = useNavigate();
+
+    const location = useLocation();
+    const joinedEvent = location.state?.event;
+    const justJoined = location.state?.justJoined;
+    const notifiedRef = useRef(false);
+
+    useEffect(() => {
+        if (notifiedRef.current) return;
+        if (!justJoined) return;
+        notifiedRef.current = true;
+        if (email && joinedEvent?.id) {
+            notifyQueueJoin({ userId: email, serviceId: joinedEvent.id }).catch(() => {});
+        }
+    }, [justJoined, joinedEvent, email]);
 
     let titleText = `🏆 Good news, ${currentUser.name}! You are now in line. 🏆`;
     if (!isInLine) {

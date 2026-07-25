@@ -11,6 +11,7 @@ const events = [
   { id: 10, title: "Kevin Hart: Reality Check", category: "Comedy Stand-Up Headliner", date: "October 10, 2026", time: "8:00 PM", location: "Toyota Center", price: 90 },
   { id: 11, title: "Improv Jam Night", category: "Comedy Improv", date: "August 22, 2026", time: "9:00 PM", location: "The Secret Group", price: 25 },
   { id: 12, title: "Late Night Roast Battle", category: "Comedy Roast", date: "September 12, 2026", time: "10:00 PM", location: "Houston Improv", price: 30 },
+  { id: 13, title: "Formula 1: Miami Grand Prix", category: "Sports Racing F1", date: "May 3, 2026", time: "3:30 PM", location: "Miami International Autodrome", price: 250 },
 ];
 
 export default events;

@@ -26,7 +26,11 @@ function JoinQueue() {
         );
 
         navigate('/queue', {
-            state: location.state
+            state: {
+                ...location.state,
+                justJoined: true,
+                eventName: location.state?.event?.title || QUEUE_EVENT_NAME
+            }
         });
     };
 

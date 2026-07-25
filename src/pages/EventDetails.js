@@ -61,7 +61,10 @@ function EventDetails() {
 
         <h3>Total: ${totalPrice}</h3>
 
-        <button className="buy-button" onClick={() => navigate("/join")}>
+        <button
+          className="buy-button"
+          onClick={() => navigate("/join", { state: { event } })}
+        >
           Buy Now
         </button>
       </div>

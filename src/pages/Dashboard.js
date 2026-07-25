@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import '../styles/Dashboard.css';
 import { userData } from '../data/userMockData.js';
 import { fetchHistory } from '../api/historyApi';
+import { fetchNotifications } from '../api/notificationsApi';
 
 // A queue is "active" if the most recent history event for that event name
 // is a join with no later leave/served event after it.
@@ -31,6 +32,25 @@ function Dashboard() {
 
   const [activeQueues, setActiveQueues] = useState([]);
   const [isLoadingQueues, setIsLoadingQueues] = useState(true);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !email) {
+      setNotifications([]);
+      return;
+    }
+    let isCancelled = false;
+    fetchNotifications(email)
+      .then((items) => {
+        if (!isCancelled) setNotifications(items);
+      })
+      .catch(() => {
+        if (!isCancelled) setNotifications([]);
+      });
+    return () => {
+      isCancelled = true;
+    };
+  }, [email, isLoggedIn]);
 
   useEffect(() => {
     if (!isLoggedIn || !email) {
@@ -83,18 +103,30 @@ function Dashboard() {
         <div className="left-column">
           <div className="dash-panel" style={{ marginBottom: '30px' }}>
             <h3>Recent Notifications</h3>
-            {userData.notifications.map(note => (
-              <div key={note.id} style={{ marginBottom: '15px', color: '#555', fontSize: '14px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-                🔔 {note.message}
-              </div>
-            ))}
+            {notifications.length === 0 ? (
+              <p style={{ color: '#888', fontStyle: 'italic', fontSize: '14px' }}>No notifications yet.</p>
+            ) : (
+              [...notifications].reverse().slice(0, 3).map(note => (
+                <div key={note.id} style={{ marginBottom: '15px', color: '#555', fontSize: '14px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
+                  🔔 {note.message}
+                </div>
+              ))
+            )}
           </div>
 
           <div className="dash-panel">
             <h3>Featured Services</h3>
             {userData.activeServices.map(service => (
-              <div key={service.id} className="list-item" style={{ borderLeftColor: '#2A3B4C' }}>
+              <div
+                key={service.id}
+                className="list-item"
+                style={{ borderLeftColor: '#2A3B4C', cursor: service.eventId ? 'pointer' : 'default' }}
+                onClick={() => service.eventId && navigate(`/event/${service.eventId}`)}
+              >
                 <div><strong>{service.name}</strong><br/><span style={{ fontSize: '12px', color: '#888' }}>{service.status}</span></div>
+                {service.eventId && (
+                  <span style={{ fontSize: '12px', color: '#2A3B4C', fontWeight: 'bold' }}>View →</span>
+                )}
               </div>
             ))}
           </div>
