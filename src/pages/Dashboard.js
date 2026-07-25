@@ -31,6 +31,7 @@ function Dashboard() {
 
   const [activeQueues, setActiveQueues] = useState([]);
   const [isLoadingQueues, setIsLoadingQueues] = useState(true);
+  const [queuePosition, setQueuePosition] = useState(null);
 
   useEffect(() => {
     if (!isLoggedIn || !email) {
@@ -54,6 +55,19 @@ function Dashboard() {
       .finally(() => {
         if (!isCancelled) setIsLoadingQueues(false);
       });
+
+    fetch('/api/queue/admin/current')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((queue) => {
+        if (isCancelled || !Array.isArray(queue)) return;
+        const index = queue.findIndex((entry) => entry.userId === email);
+        setQueuePosition(index === -1 ? null : { event: queue[index].serviceId, positionAhead: index });
+      })
+      .catch((err) => {
+        console.error('Failed to load queue position:', err);
+        if (!isCancelled) setQueuePosition(null);
+      });
+
 
     return () => {
       isCancelled = true;
@@ -114,6 +128,11 @@ function Dashboard() {
                 <div>
                   <h4 style={{ margin: '0 0 5px 0', color: '#2A3B4C', fontSize: '1.2rem' }}>{queue.event}</h4>
                   <span style={{ color: '#888', fontSize: '14px' }}>Joined on {queue.date}</span>
+                  {queuePosition && queuePosition.event === queue.event && (
+                    <div style={{ color: '#2A3B4C', fontSize: '14px', marginTop: '4px', fontWeight: 'bold' }}>
+                      {queuePosition.positionAhead} {queuePosition.positionAhead === 1 ? 'person' : 'people'} ahead of you
+                    </div>
+                  )}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <button

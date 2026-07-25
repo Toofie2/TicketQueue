@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { logHistoryEvent } from '../api/historyApi';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import '../styles/queue.css';
 
@@ -14,27 +15,14 @@ function Checkout() {
     e.preventDefault();
     const userIdentifier = email || "harpreet@test.com";
 
-    fetch('http://localhost:5000/api/queue/success', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: userIdentifier,
-        eventTitle: activeTicket.eventTitle,
-        ticketQuantity: activeTicket.ticketQuantity,
-        outcome: "Served" 
-      })
-    })
-    .then(() => {
-      setIsInLine(false); 
-      setIsTimeUp(false);
-      navigate('/success', { state: activeTicket }); 
-    })
-    .catch((err) => {
-      console.log("History fallback logging active:", err);
-      setIsInLine(false);
-      setIsTimeUp(false);
-      navigate('/success', { state: activeTicket });
-    });
+    // History Module: log that this user was served once payment is confirmed.
+    logHistoryEvent({ email: userIdentifier, event: activeTicket.eventTitle, outcome: 'Served' })
+      .catch((err) => console.error('Failed to log "Served" history event:', err))
+      .finally(() => {
+        setIsInLine(false);
+        setIsTimeUp(false);
+        navigate('/success', { state: activeTicket });
+      });
   };
 
   return (
