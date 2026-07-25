@@ -1,9 +1,10 @@
 import {
-  useNavigate,
   useLocation,
+  useNavigate,
   useOutletContext,
 } from "react-router-dom";
 import { useState } from "react";
+import { logHistoryEvent } from "../api/historyApi";
 import "../styles/queue.css";
 
 const API_BASE =
@@ -12,14 +13,14 @@ const API_BASE =
 function JoinQueue() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, username } = useOutletContext();
+  const { isLoggedIn, username, email } = useOutletContext();
 
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
 
   const purchaseData = location.state;
   const event = purchaseData?.event;
-  const userId = username || "guest";
+  const userId = username || email || "guest";
 
   const handleJoinQueue = async (e) => {
     e.preventDefault();
@@ -31,7 +32,9 @@ function JoinQueue() {
     }
 
     if (!event) {
-      setError("Event information is missing. Please select an event again.");
+      setError(
+        "Event information is missing. Please select an event again."
+      );
       return;
     }
 
@@ -59,6 +62,17 @@ function JoinQueue() {
         );
       }
 
+      logHistoryEvent({
+        email,
+        event: event.title,
+        outcome: "Joined Queue",
+      }).catch((err) =>
+        console.error(
+          'Failed to log "Joined Queue" history event:',
+          err
+        )
+      );
+
       navigate("/queue", {
         state: {
           ...purchaseData,
@@ -81,7 +95,10 @@ function JoinQueue() {
         <div className="outer-box" style={{ maxWidth: "440px" }}>
           <div
             className="inner-box"
-            style={{ borderBottom: "none", paddingBottom: 0 }}
+            style={{
+              borderBottom: "none",
+              paddingBottom: 0,
+            }}
           >
             <h2
               className="queue-label"
@@ -93,15 +110,17 @@ function JoinQueue() {
             {event && (
               <div
                 style={{
-                marginTop: "16px",
-                textAlign: "center",
-                color: "white",
-            }}
->
+                  marginTop: "16px",
+                  textAlign: "center",
+                  color: "white",
+                }}
+              >
                 <p>
                   <strong>{event.title}</strong>
                 </p>
+
                 <p>Tickets: {purchaseData.quantity}</p>
+
                 <p>Total: ${purchaseData.totalPrice}</p>
               </div>
             )}

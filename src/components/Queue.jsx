@@ -1,3 +1,5 @@
+import { useOutletContext } from "react-router-dom";
+import { logHistoryEvent } from "../api/historyApi";
 import "../styles/queue.css";
 
 function Queue({
@@ -14,6 +16,8 @@ function Queue({
   onRejoinQueue,
   onCheckout,
 }) {
+  const { email } = useOutletContext();
+
   const totalCap = currentUser?.totalQueueCap || 1500;
   const peopleServed = Math.max(totalCap - usersAhead, 0);
 
@@ -22,6 +26,44 @@ function Queue({
     100
   );
 
+  const handleLeaveQueue = () => {
+    const confirmLeave = window.confirm(
+      "Are you sure you want to leave the queue? You will lose your spot!"
+    );
+
+    if (!confirmLeave) {
+      return;
+    }
+
+    logHistoryEvent({
+      email,
+      event: eventTitle,
+      outcome: "Left Queue",
+    }).catch((err) =>
+      console.error(
+        'Failed to log "Left Queue" history event:',
+        err
+      )
+    );
+
+    onLeaveQueue();
+  };
+
+  const handleCheckout = () => {
+    logHistoryEvent({
+      email,
+      event: eventTitle,
+      outcome: "Served",
+    }).catch((err) =>
+      console.error(
+        'Failed to log "Served" history event:',
+        err
+      )
+    );
+
+    onCheckout();
+  };
+
   return (
     <div className="queue-page-container">
       <div className="queue-top-text">
@@ -29,7 +71,7 @@ function Queue({
 
         {isInLine && (
           <p className="user-id-tag">
-            Account ID: {currentUser.id}
+            Account ID: {currentUser?.id}
           </p>
         )}
       </div>
@@ -38,7 +80,9 @@ function Queue({
         {isInLine ? (
           <>
             <div className="inner-box">
-              <h1 className="queue-label">People ahead of you:</h1>
+              <h1 className="queue-label">
+                People ahead of you:
+              </h1>
 
               <h1 className="queue-position-number">
                 #{usersAhead}
@@ -62,8 +106,13 @@ function Queue({
                 {eventTitle}
               </h1>
 
-                <p style={{ color: "white" }}>Tickets: {quantity}</p>
-                <p style={{ color: "white" }}>Total: ${totalPrice}</p>
+              <p style={{ color: "white" }}>
+                Tickets: {quantity}
+              </p>
+
+              <p style={{ color: "white" }}>
+                Total: ${totalPrice}
+              </p>
             </div>
 
             <div className="wait-time-box">
@@ -81,14 +130,14 @@ function Queue({
             {isTimeUp ? (
               <button
                 className="success-checkout-btn"
-                onClick={onCheckout}
+                onClick={handleCheckout}
               >
                 Proceed to Checkout
               </button>
             ) : (
               <button
                 className="success-checkout-btn"
-                onClick={onLeaveQueue}
+                onClick={handleLeaveQueue}
               >
                 Leave Queue
               </button>

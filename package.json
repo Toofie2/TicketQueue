@@ -2,6 +2,7 @@
   "name": "queuesmart",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:4000",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -18,6 +19,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "server": "npm --prefix backend start",
+    "test:backend": "npm --prefix backend test",
+    "test:backend:coverage": "npm --prefix backend run test:coverage",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
