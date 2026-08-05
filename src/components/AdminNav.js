@@ -12,7 +12,13 @@ function AdminNav() {
         </NavLink>
         <NavLink to="/admin/services">Event Management</NavLink>
         <NavLink to="/admin/queue">Queue Management</NavLink>
-        <button className="admin-logout-btn" onClick={() => navigate("/login")}>
+        <button
+          className="admin-logout-btn"
+          onClick={() => {
+            localStorage.removeItem("token");
+            navigate("/login");
+          }}
+        >
           Log Out
         </button>
       </div>

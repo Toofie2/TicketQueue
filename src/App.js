@@ -95,9 +95,12 @@ function App() {
 
   // Called after the backend confirms a successful login/registration.
   // The role comes from the backend response, never guessed on the client.
-  const handleLogin = (userEmail, userRole = 'user') => {
+  const handleLogin = (userEmail, userRole = 'user', userToken) => {
     const nameFromEmail = userEmail.split('@')[0];
     const formattedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
+    if (userToken) {
+      localStorage.setItem('token', userToken);
+    }
     setUsername(formattedName);
     setEmail(userEmail);
     setRole(userRole);
@@ -112,6 +115,7 @@ function App() {
 
   // Function to run to fully log the user out
   const handleLogout = () => {
+    localStorage.removeItem('token');
     setUsername(''); // This clears the name
     setEmail('');
     setRole('user');

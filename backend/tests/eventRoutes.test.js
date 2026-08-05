@@ -1,6 +1,9 @@
 import request from 'supertest';
 import { createApp } from '../apiServer.js';
 import { db, resetDb } from '../data/db.js';
+import { signToken } from '../middleware/auth.js';
+
+const adminToken = signToken({ email: 'admin@tixq.com', role: 'admin', name: 'Admin' });
 
 let app;
 beforeEach(() => {
@@ -33,12 +36,15 @@ describe('GET /api/events', () => {
   });
 
   test('falls back to empty strings when category and time are absent', async () => {
-    await request(app).post('/api/services').send({
-      name: 'Minimal Event',
-      description: 'No category or time',
-      expectedDuration: 60,
-      priority: 'Low',
-    });
+    await request(app)
+      .post('/api/services')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Minimal Event',
+        description: 'No category or time',
+        expectedDuration: 60,
+        priority: 'Low',
+      });
     const res = await request(app).get('/api/events');
     const created = res.body.find((e) => e.title === 'Minimal Event');
     expect(created.category).toBe('');
@@ -46,15 +52,18 @@ describe('GET /api/events', () => {
   });
 
   test('reflects a newly created service', async () => {
-    await request(app).post('/api/services').send({
-      name: 'Backend Gala',
-      description: 'A test event',
-      expectedDuration: 120,
-      priority: 'High',
-      venue: 'Test Arena',
-      category: 'Music',
-      time: '8:30 PM',
-    });
+    await request(app)
+      .post('/api/services')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Backend Gala',
+        description: 'A test event',
+        expectedDuration: 120,
+        priority: 'High',
+        venue: 'Test Arena',
+        category: 'Music',
+        time: '8:30 PM',
+      });
     const res = await request(app).get('/api/events');
     const created = res.body.find((e) => e.title === 'Backend Gala');
     expect(created).toBeDefined();

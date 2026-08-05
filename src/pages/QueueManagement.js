@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import QueueTable from "../components/QueueTable";
+import { authHeaders } from "../api/authApi";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -10,7 +11,7 @@ function QueueManagement() {
   const [error, setError] = useState("");
 
   const loadQueue = useCallback(() => {
-    fetch(`${API_BASE}/api/queue/admin/current`)
+    fetch(`${API_BASE}/api/queue/admin/current`, { headers: { ...authHeaders() } })
       .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data)) return;
@@ -31,7 +32,7 @@ function QueueManagement() {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/services`)
+    fetch(`${API_BASE}/api/services`, { headers: { ...authHeaders() } })
       .then((res) => res.json())
       .then((data) => {
         setServices(data);

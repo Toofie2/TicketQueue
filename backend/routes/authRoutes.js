@@ -4,6 +4,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { users, ADMIN_EMAILS } from './mockDB.js';
+import { signToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -74,7 +75,11 @@ router.post('/register', (req, res) => {
   };
   users.push(newUser);
 
-  return res.status(201).json({ message: 'Registration successful!', user: toPublicUser(newUser) });
+  return res.status(201).json({
+    message: 'Registration successful!',
+    token: signToken(newUser),
+    user: toPublicUser(newUser),
+  });
 });
 
 // POST /api/auth/login
@@ -96,7 +101,11 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
 
-  return res.status(200).json({ message: 'Login successful!', user: toPublicUser(user) });
+  return res.status(200).json({
+    message: 'Login successful!',
+    token: signToken(user),
+    user: toPublicUser(user),
+  });
 });
 
 export default router;
