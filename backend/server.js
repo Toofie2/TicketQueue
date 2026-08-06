@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createApp } from './apiServer.js';
 import { db } from './data/db.js';
 import { notifyReadyForCheckout } from './services/notificationService.js';

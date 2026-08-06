@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../data/db.js';
 import { users, history, nextHistoryId } from './mockDB.js';
+import { authenticate, authorizeAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -55,7 +56,7 @@ router.delete('/leave/:userId', (req, res) => {
   res.json({ message: "Left queue successfully" });
 });
 
-router.get('/admin/current', (req, res) => {
+router.get('/admin/current', authenticate, authorizeAdmin, (req, res) => {
   const priorityWeights = { High: 3, Medium: 2, Low: 1 };
   const sortedQueue = [...db.queue].sort((a, b) => {
     if (priorityWeights[b.priority] !== priorityWeights[a.priority]) {
@@ -67,7 +68,7 @@ router.get('/admin/current', (req, res) => {
   res.json(sortedQueue);
 });
 
-router.post('/admin/serve', (req, res) => {
+router.post('/admin/serve', authenticate, authorizeAdmin, (req, res) => {
   if (db.queue.length === 0) {
     return res.status(400).json({ message: "Queue is empty" });
   }
@@ -92,7 +93,7 @@ router.post('/success', (req, res) => {
   res.status(201).json({ message: "Success" });
 });
 
-router.get('/admin/history-query/:email', (req, res) => {
+router.get('/admin/history-query/:email', authenticate, authorizeAdmin, (req, res) => {
   const { email } = req.params;
   const userFilteredHistory = history.filter(h => h.email === email);
   res.json(userFilteredHistory);

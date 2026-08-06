@@ -1,6 +1,11 @@
 // Talks to the backend Authentication Module (backend/routes/authRoutes.js).
 // CRA's dev server proxies /api/* to the backend (see "proxy" in package.json).
 
+export function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function parseResponse(res) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
