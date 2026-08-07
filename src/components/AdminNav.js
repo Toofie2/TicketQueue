@@ -12,6 +12,7 @@ function AdminNav() {
         </NavLink>
         <NavLink to="/admin/services">Event Management</NavLink>
         <NavLink to="/admin/queue">Queue Management</NavLink>
+        <NavLink to="/admin/reports">Reports</NavLink>
         <button
           className="admin-logout-btn"
           onClick={() => {
