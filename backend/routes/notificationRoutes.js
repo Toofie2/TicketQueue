@@ -1,62 +1,47 @@
 import express from 'express';
-import { db } from '../data/db.js';
-import {
-  notifyQueueJoin,
-  notifyAlmostServed,
-  notifyReadyForCheckout,
-  isAlmostServed,
-} from '../services/notificationService.js';
+import { query } from '../db/pool.js';
+import { authenticate, authorizeAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  res.json(db.notifications);
+router.get('/', authenticate, authorizeAdmin, async (req, res) => {
+  try {
+    const [rows] = await query('SELECT * FROM notification ORDER BY createdAt DESC');
+    res.json(rows);
+  } catch (err) {
+    console.error("SQL error fetching all notifications:", err.message);
+    res.status(500).json({ error: "Database execution failed to retrieve logs." });
+  }
 });
 
-router.post('/queue-join', (req, res) => {
-  const { userId, serviceId } = req.body;
-  if (!userId || !serviceId) {
-    return res.status(400).json({ error: 'Missing required fields' });
+router.patch('/:id/read', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updateSql = "UPDATE notification SET status = 'viewed' WHERE id = ?";
+    const result = await query(updateSql, [Number(id)]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    const [rows] = await query('SELECT * FROM notification WHERE id = ?', [Number(id)]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("SQL error updating notification status:", err.message);
+    res.status(500).json({ error: "Database execution failed to mutate record status." });
   }
-  const notification = notifyQueueJoin(userId, serviceId);
-  res.status(201).json(notification);
 });
 
-router.post('/check-position', (req, res) => {
-  const { userId, serviceId, position } = req.body;
-  if (!userId || !serviceId || position === undefined) {
-    return res.status(400).json({ error: 'Missing required fields' });
+router.get('/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const selectSql = 'SELECT * FROM notification WHERE userId = ? ORDER BY createdAt DESC';
+    const [rows] = await query(selectSql, [Number(userId)]);
+    res.json(rows);
+  } catch (err) {
+    console.error("SQL error filtering user notifications:", err.message);
+    res.status(500).json({ error: "Database error retrieving user records." });
   }
-  const pos = Number(position);
-  if (Number.isNaN(pos) || pos < 0) {
-    return res.status(400).json({ error: 'position must be a non-negative number.' });
-  }
-  if (isAlmostServed(pos)) {
-    const notification = notifyAlmostServed(userId, serviceId, pos);
-    return res.status(201).json({ triggered: true, notification });
-  }
-  res.json({ triggered: false, message: 'User is not close to being served yet.' });
-});
-
-router.post('/ready-checkout', (req, res) => {
-  const { userId, serviceId } = req.body;
-  if (!userId) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-  const notification = notifyReadyForCheckout(userId, serviceId);
-  res.status(201).json(notification);
-});
-
-router.patch('/:id/read', (req, res) => {
-  const notification = db.notifications.find((n) => n.id === Number(req.params.id));
-  if (!notification) return res.status(404).json({ error: 'Notification not found' });
-  notification.read = true;
-  res.json(notification);
-});
-
-router.get('/:userId', (req, res) => {
-  const items = db.notifications.filter((n) => n.userId === req.params.userId);
-  res.json(items);
 });
 
 export default router;
