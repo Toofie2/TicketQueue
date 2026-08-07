@@ -14,11 +14,11 @@ const API_BASE =
 function JoinQueue() {
   const navigate = useNavigate();
   const location = useLocation();
-
   const {
     isLoggedIn,
     username,
     email,
+    userId: contextUserId,
     setActiveTicket,
     setIsTimeUp,
     setSecondsElapsed,
@@ -33,23 +33,20 @@ function JoinQueue() {
 
   const quantity = purchaseData?.quantity || 1;
   const totalPrice = purchaseData?.totalPrice || 0;
-  const userId = email || username || "guest";
+  const dbUserId = contextUserId || 1; 
+  const dbServiceId = event?.id || purchaseData?.id || 1; 
 
   const handleJoinQueue = async (e) => {
     e.preventDefault();
 
     if (!isLoggedIn) {
-      alert(
-        "Account required! Redirecting you to the login page."
-      );
+      alert("Account required! Redirecting you to the login page.");
       navigate("/login");
       return;
     }
 
     if (!event) {
-      setError(
-        "Event information is missing. Please select an event again."
-      );
+      setError("Event information is missing. Please select an event again.");
       return;
     }
 
@@ -65,8 +62,8 @@ function JoinQueue() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId,
-            serviceId: event.title,
+            userId: Number(dbUserId),
+            serviceId: Number(dbServiceId),
             priority: event.priority || "Medium",
             name: username || "Demo User",
             tickets: quantity,
@@ -78,9 +75,7 @@ function JoinQueue() {
 
       if (!response.ok) {
         throw new Error(
-          data.error ||
-            data.message ||
-            "Unable to join queue."
+          data.error || data.message || "Unable to join queue."
         );
       }
 
@@ -110,9 +105,7 @@ function JoinQueue() {
       }
 
       if (email && event.id) {
-        notifyQueueJoin({ userId: email, serviceId: event.id }).catch(
-          () => {}
-        );
+        notifyQueueJoin({ userId: dbUserId, serviceId: event.id }).catch(() => {});
       }
 
       logHistoryEvent({
@@ -120,16 +113,13 @@ function JoinQueue() {
         event: event.title,
         outcome: "Joined Queue",
       }).catch((err) =>
-        console.error(
-          'Failed to log "Joined Queue" history event:',
-          err
-        )
+        console.error('Failed to log "Joined Queue" history event:', err)
       );
 
       navigate("/queue", {
         state: {
           ...purchaseData,
-          userId,
+          userId: dbUserId,
         },
       });
     } catch (err) {
@@ -155,8 +145,7 @@ function JoinQueue() {
           <div
             className="inner-box"
             style={{
-              borderBottom:
-                "1px solid rgba(197, 150, 72, 0.2)",
+              borderBottom: "1px solid rgba(197, 150, 72, 0.2)",
               paddingBottom: "20px",
             }}
           >

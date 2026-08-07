@@ -27,71 +27,74 @@ function App() {
   useEffect(() => {
     if (!isInLine || isTimeUp) return;
 
-    const totalDurationSeconds = 90;
+    const userIdentifier = email || "guest";
 
-    const queueIntervalClock = setInterval(() => {
-      setSecondsElapsed((prev) => {
-        const nextSeconds = prev + 1;
-        const progressRatio = nextSeconds / totalDurationSeconds;
-
-        const nextUsers = Math.max(0, Math.floor(300 * (1 - progressRatio)));
-        setUsersAhead(nextUsers);
-
-        const remaining = totalDurationSeconds - nextSeconds;
-
-        if (remaining > 60) {
-          setWaitTime("2 mins");
-        } else if (remaining === 60) {
-          setWaitTime("1 min");
-        } else if (remaining < 60 && remaining > 0) {
-          setWaitTime("< 1 min");
-        } else if (remaining <= 0) {
-          setIsTimeUp(true);
-          setWaitTime("0 mins");
-          setUsersAhead(0);
-
-          if (!activeToastIdRef.current) {
-            activeToastIdRef.current = toast.success(
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span>🎉 Your turn has arrived for {activeTicket.eventTitle}!</span>
-                <button 
-                  onClick={() => {
-                    toast.dismiss(activeToastIdRef.current);
-                    activeToastIdRef.current = null;
-                    navigate('/checkout');
-                  }} 
-                  style={{
-                    backgroundColor: '#1b2b36',
-                    color: '#c59648',
-                    border: '1px solid #c59648',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 'bold',
-                    width: 'fit-content'
-                  }}
-                >
-                  Go to Checkout 🛒
-                </button>
-              </div>,
-              {
-                position: "top-right",
-                autoClose: false,
-                closeOnClick: false 
-              }
-            );
+    const syncDatabaseQueueState = () => {
+      fetch(`http://localhost:4000/api/queue/status/${userIdentifier}`)
+        .then((res) => {
+          if (res.status === 404) {
+            setIsTimeUp(true);
+            setUsersAhead(0);
+            setWaitTime("0 mins");
+            return null;
           }
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) return;
 
-          clearInterval(queueIntervalClock);
-          return prev;
-        }
-        return nextSeconds;
-      });
-    }, 1000);
+          setUsersAhead(data.positionAhead);
 
-    return () => clearInterval(queueIntervalClock);
-  }, [isInLine, isTimeUp, activeTicket.eventTitle, navigate]);
+          if (data.positionAhead <= 0 && data.waitTime === 0) {
+
+            setIsTimeUp(true);
+            setWaitTime("0 mins");
+
+            if (!activeToastIdRef.current) {
+              activeToastIdRef.current = toast.success(
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span>🎉 Your turn has arrived for {activeTicket.eventTitle}!</span>
+                  <button 
+                    onClick={() => {
+                      toast.dismiss(activeToastIdRef.current);
+                      activeToastIdRef.current = null;
+                      navigate('/checkout');
+                    }} 
+                    style={{
+                      backgroundColor: '#1b2b36', color: '#c59648', border: '1px solid #c59648',
+                      padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
+                      fontSize: '0.85rem', fontWeight: 'bold', width: 'fit-content'
+                    }}
+                  >
+                    Go to Checkout 🛒
+                  </button>
+                </div>,
+                {
+                  position: "top-right",
+                  autoClose: false,
+                  closeOnClick: false 
+                }
+              );
+            }
+          } else if (data.positionAhead === 1 && data.waitTime === 1) {
+            setWaitTime("Waiting for previous customer to pay...");
+          } else {
+            setWaitTime(data.positionAhead === 1 ? "< 1 min" : `${data.waitTime} mins`);
+          }
+        })
+        .catch((err) => console.log("Database transaction polling connection inactive.", err));
+    };
+    syncDatabaseQueueState();
+    const pollingInterval = setInterval(syncDatabaseQueueState, 3000);
+
+    return () => {
+      clearInterval(pollingInterval);
+      if (activeToastIdRef.current) {
+        toast.dismiss(activeToastIdRef.current);
+        activeToastIdRef.current = null;
+      }
+    };
+  }, [isInLine, isTimeUp, email, activeTicket.eventTitle, navigate]);
 
   // Called after the backend confirms a successful login/registration.
   // The role comes from the backend response, never guessed on the client.

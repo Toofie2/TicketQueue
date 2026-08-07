@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { logHistoryEvent } from '../api/historyApi';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import '../styles/queue.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 function Checkout() {
-  const { email, activeTicket, setIsInLine, setIsTimeUp } = useOutletContext();
+  const { email, userId, activeTicket, setIsInLine, setIsTimeUp } = useOutletContext();
   const navigate = useNavigate();
 
   const [cardNumber, setCardNumber] = useState('4111 2222 3333 4444');
@@ -15,23 +14,45 @@ function Checkout() {
 
   const handleFinalPayment = (e) => {
     e.preventDefault();
-    const userIdentifier = email || "harpreet@test.com";
+    const numericUserId = isNaN(Number(userId)) ? 1 : Number(userId);
+    const serviceNameString = activeTicket?.eventTitle || "Event Admission Pass";
 
-    fetch(
-      `${API_BASE}/api/queue/leave/${encodeURIComponent(userIdentifier)}` +
-        (activeTicket?.eventTitle
-          ? `?serviceId=${encodeURIComponent(activeTicket.eventTitle)}`
-          : ""),
-      { method: "DELETE" }
-    ).catch(() => {});
+    fetch(`${API_BASE}/api/queue/success`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: Number(numericUserId),
+        serviceName: serviceNameString,
+        outcome: "Served"
+      })
+    })
+    .finally(() => {
+      localStorage.removeItem("cartItem"); 
+      if (setIsInLine) setIsInLine(false);
+      if (setIsTimeUp) setIsTimeUp(false);
+      navigate('/success', { state: activeTicket });
+    });
+  };
 
-    logHistoryEvent({ email: userIdentifier, event: activeTicket.eventTitle, outcome: 'Served' })
-      .catch((err) => console.error('Failed to log "Served" history event:', err))
-      .finally(() => {
-        setIsInLine(false);
-        setIsTimeUp(false);
-        navigate('/success', { state: activeTicket });
-      });
+  const handleAbandonFromCheckout = () => {
+    const confirmCancel = window.confirm("Cancel this transaction and abandon your secured tickets?");
+    if (!confirmCancel) return;
+    const numericUserId = isNaN(Number(userId)) ? 1 : Number(userId);
+    fetch(`${API_BASE}/api/queue/success`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: Number(numericUserId),
+        serviceName: activeTicket?.eventTitle || "Event Pass",
+        outcome: "Left Queue"
+      })
+    })
+    .finally(() => {
+      localStorage.removeItem("cartItem"); 
+      if (setIsInLine) setIsInLine(false);
+      if (setIsTimeUp) setIsTimeUp(false);
+      navigate('/dashboard');
+    });
   };
 
   return (
@@ -67,6 +88,17 @@ function Checkout() {
 
             <button type="submit" className="success-checkout-btn" style={{ width: '100%', margin: '10px 0 0 0' }}>
               Authorize Payment (${activeTicket.finalPrice})
+            </button>
+            <button 
+              type="button" 
+              onClick={handleAbandonFromCheckout}
+              style={{
+                width: '100%', backgroundColor: 'transparent', border: '1px solid #d8000c',
+                color: '#d8000c', padding: '10px', borderRadius: '8px', cursor: 'pointer',
+                fontWeight: 'bold', fontSize: '0.95rem', marginTop: '5px'
+              }}
+            >
+              Abandon Queue
             </button>
           </form>
 
