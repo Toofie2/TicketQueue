@@ -110,4 +110,4 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
-export default router;
+setInterval(notifyFrontUsers, 5000);
