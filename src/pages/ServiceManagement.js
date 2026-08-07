@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { authHeaders } from "../api/authApi";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -39,7 +40,7 @@ function ServiceManagement() {
     try {
       const res = await fetch(`${API_BASE}/api/services/${s.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ queueOpen: !isOpen(s) }),
       });
       const data = await res.json();
@@ -52,7 +53,7 @@ function ServiceManagement() {
 
   useEffect(() => {
     let active = true;
-    fetch(`${API_BASE}/api/services`)
+    fetch(`${API_BASE}/api/services`, { headers: { ...authHeaders() } })
       .then((res) => res.json())
       .then((data) => {
         if (!active) return;
@@ -94,7 +95,7 @@ function ServiceManagement() {
         : `${API_BASE}/api/services`;
       const res = await fetch(url, {
         method: editingId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(form),
       });
       const data = await res.json();
@@ -133,6 +134,7 @@ function ServiceManagement() {
     try {
       const res = await fetch(`${API_BASE}/api/services/${id}`, {
         method: "DELETE",
+        headers: { ...authHeaders() },
       });
       if (!res.ok) return;
       setServices((prev) => prev.filter((s) => s.id !== id));

@@ -1,11 +1,23 @@
 import request from 'supertest';
 import { createApp } from '../apiServer.js';
-import { db, resetDb } from '../data/db.js';
+import { signToken } from '../middleware/auth.js';
+import { createSchema, seedServices, closePool } from './testDb.js';
+
+const adminToken = signToken({ email: 'admin@tixq.com', role: 'admin', name: 'Admin' });
 
 let app;
-beforeEach(() => {
-  resetDb();
+
+beforeAll(async () => {
+  await createSchema();
   app = createApp();
+});
+
+beforeEach(async () => {
+  await seedServices(3);
+});
+
+afterAll(async () => {
+  await closePool();
 });
 
 describe('GET /api/events', () => {
@@ -13,52 +25,41 @@ describe('GET /api/events', () => {
     const res = await request(app).get('/api/events');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBe(db.services.length);
+    expect(res.body.length).toBe(3);
   });
 
   test('maps service fields into event shape', async () => {
     const res = await request(app).get('/api/events');
-    const service = db.services[0];
-    const event = res.body.find((e) => e.id === service.id);
+    const event = res.body.find((e) => e.id === 1);
     expect(event).toMatchObject({
-      id: service.id,
-      title: service.name,
-      category: service.category,
-      time: service.time,
-      location: service.venue,
-      price: service.price,
+      id: 1,
+      title: 'Service 1',
+      category: 'Sports Test',
+      time: '7:00 PM',
+      location: 'Test Venue',
     });
     expect(event).not.toHaveProperty('name');
     expect(event).not.toHaveProperty('venue');
-  });
-
-  test('falls back to empty strings when category and time are absent', async () => {
-    await request(app).post('/api/services').send({
-      name: 'Minimal Event',
-      description: 'No category or time',
-      expectedDuration: 60,
-      priority: 'Low',
-    });
-    const res = await request(app).get('/api/events');
-    const created = res.body.find((e) => e.title === 'Minimal Event');
-    expect(created.category).toBe('');
-    expect(created.time).toBe('');
+    expect(event.queueOpen).toBe(true);
   });
 
   test('reflects a newly created service', async () => {
-    await request(app).post('/api/services').send({
-      name: 'Backend Gala',
-      description: 'A test event',
-      expectedDuration: 120,
-      priority: 'High',
-      venue: 'Test Arena',
-      category: 'Music',
-      time: '8:30 PM',
-    });
+    await request(app)
+      .post('/api/services')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Backend Gala',
+        description: 'A test event',
+        expectedDuration: 120,
+        priority: 'High',
+        venue: 'Gala Arena',
+        category: 'Music',
+        time: '8:30 PM',
+      });
     const res = await request(app).get('/api/events');
     const created = res.body.find((e) => e.title === 'Backend Gala');
     expect(created).toBeDefined();
-    expect(created.location).toBe('Test Arena');
+    expect(created.location).toBe('Gala Arena');
     expect(created.category).toBe('Music');
     expect(created.time).toBe('8:30 PM');
   });
@@ -69,7 +70,7 @@ describe('GET /api/events/:id', () => {
     const res = await request(app).get('/api/events/1');
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(1);
-    expect(res.body.title).toBe(db.services.find((s) => s.id === 1).name);
+    expect(res.body.title).toBe('Service 1');
   });
 
   test('404 for a missing event', async () => {

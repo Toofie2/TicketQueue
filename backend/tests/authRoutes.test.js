@@ -1,15 +1,62 @@
+import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import mysql from 'mysql2/promise';
+import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import { createApp } from '../apiServer.js';
-import { resetDB, users } from '../routes/mockDB.js';
+import { query, getPool } from '../db/pool.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const testUrl = new URL(process.env.DATABASE_URL);
+testUrl.pathname = '/queuesmart_test';
+process.env.DATABASE_URL = testUrl.toString();
+
+const adminConfig = {
+  host: testUrl.hostname,
+  port: Number(testUrl.port) || 3306,
+  user: decodeURIComponent(testUrl.username),
+  password: decodeURIComponent(testUrl.password),
+  multipleStatements: true,
+};
+
+async function resetAuthTables() {
+  await query('DELETE FROM userprofile');
+  await query('DELETE FROM usercredentials');
+  const [r] = await query(
+    'INSERT INTO usercredentials (email, password, role) VALUES (?, ?, ?)',
+    ['admin@tixq.com', bcrypt.hashSync('Admin123!', 8), 'admin']
+  );
+  await query('INSERT INTO userprofile (userId, fullName, email) VALUES (?, ?, ?)', [
+    r.insertId,
+    'Admin',
+    'admin@tixq.com',
+  ]);
+}
+
+let app;
+
+beforeAll(async () => {
+  const conn = await mysql.createConnection(adminConfig);
+  await conn.query('CREATE DATABASE IF NOT EXISTS queuesmart_test');
+  await conn.query('USE queuesmart_test');
+  const schema = fs.readFileSync(path.join(__dirname, '..', 'db', 'schema.sql'), 'utf8');
+  await conn.query(schema);
+  await conn.end();
+  app = createApp();
+});
+
+beforeEach(async () => {
+  await resetAuthTables();
+});
+
+afterAll(async () => {
+  await getPool().end();
+});
 
 describe('Auth API', () => {
-  let app;
-
-  beforeEach(() => {
-    resetDB();
-    app = createApp();
-  });
-
   describe('POST /api/auth/register', () => {
     test('registers a new user with valid input', async () => {
       const res = await request(app)
@@ -26,9 +73,11 @@ describe('Auth API', () => {
         .post('/api/auth/register')
         .send({ email: 'newuser@test.com', password: 'password123' });
 
-      const stored = users.find((u) => u.email === 'newuser@test.com');
-      expect(stored.password).not.toBe('password123');
-      expect(stored.password.length).toBeGreaterThan(20);
+      const [rows] = await query('SELECT password FROM usercredentials WHERE email = ?', [
+        'newuser@test.com',
+      ]);
+      expect(rows[0].password).not.toBe('password123');
+      expect(rows[0].password.length).toBeGreaterThan(20);
     });
 
     test('assigns the admin role only to allow-listed admin emails', async () => {
@@ -115,6 +164,13 @@ describe('Auth API', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.user).toEqual({ email: 'admin@tixq.com', role: 'admin', name: 'Admin' });
+    });
+
+    test('returns a token on successful login', async () => {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'admin@tixq.com', password: 'Admin123!' });
+      expect(typeof res.body.token).toBe('string');
     });
 
     test('login is case-insensitive on email', async () => {

@@ -6,6 +6,7 @@ import queueRoutes from './routes/queueRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import historyRoutes from './routes/historyRoutes.js';
+import { authenticate, authorizeAdmin } from './middleware/auth.js';
 
 export function createApp() {
   const app = express();
@@ -15,7 +16,7 @@ export function createApp() {
   app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
   app.use('/api/events', eventRoutes);
-  app.use('/api/services', serviceRoutes);
+  app.use('/api/services', authenticate, authorizeAdmin, serviceRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/queue', queueRoutes);
   app.use('/api/auth', authRoutes);

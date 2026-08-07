@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { mockRevenue } from "../data/adminMockData";
+import { authHeaders } from "../api/authApi";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -10,7 +11,7 @@ function AdminDashboard() {
   const [showAllSales, setShowAllSales] = useState(false);
 
   const loadQueue = useCallback(() => {
-    fetch(`${API_BASE}/api/queue/admin/current`)
+    fetch(`${API_BASE}/api/queue/admin/current`, { headers: { ...authHeaders() } })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setQueue(data);
@@ -19,7 +20,7 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/services`)
+    fetch(`${API_BASE}/api/services`, { headers: { ...authHeaders() } })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setServices(data);
@@ -45,7 +46,7 @@ function AdminDashboard() {
   const toggleQueue = (s) => {
     fetch(`${API_BASE}/api/services/${s.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ queueOpen: !isOpen(s) }),
     })
       .then((res) => res.json())

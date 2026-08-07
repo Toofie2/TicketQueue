@@ -1,36 +1,27 @@
-// backend/routes/authRoutes.js
-// Authentication Module: registration, login, and role handling (User vs Administrator).
-
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import { users, ADMIN_EMAILS } from './mockDB.js';
+import { ADMIN_EMAILS } from './mockDB.js';
+import { signToken } from '../middleware/auth.js';
+import { query } from '../db/pool.js';
 
 const router = express.Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
 const MIN_PASSWORD_LENGTH = 6;
-const MAX_PASSWORD_LENGTH = 72; // bcrypt truncates/errors beyond this
+const MAX_PASSWORD_LENGTH = 72;
 const MAX_NAME_LENGTH = 100;
 
 function resolveRole(email) {
   return ADMIN_EMAILS.includes(email) ? 'admin' : 'user';
 }
 
-function toPublicUser(user) {
-  return { email: user.email, role: user.role, name: user.name };
-}
-
-// POST /api/auth/register
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   const { email, password, name } = req.body || {};
 
-  // Required fields
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
-
-  // Field types
   if (typeof email !== 'string' || typeof password !== 'string') {
     return res.status(400).json({ error: 'Email and password must be text values.' });
   }
@@ -39,8 +30,6 @@ router.post('/register', (req, res) => {
   }
 
   const trimmedEmail = email.trim();
-
-  // Field length limits
   if (trimmedEmail.length === 0 || trimmedEmail.length > MAX_EMAIL_LENGTH) {
     return res.status(400).json({ error: `Email must be between 1 and ${MAX_EMAIL_LENGTH} characters.` });
   }
@@ -58,27 +47,36 @@ router.post('/register', (req, res) => {
   }
 
   const normalizedEmail = trimmedEmail.toLowerCase();
-  const existingUser = users.find((u) => u.email === normalizedEmail);
-  if (existingUser) {
-    return res.status(409).json({ error: 'An account with this email already exists.' });
+
+  try {
+    const [existing] = await query('SELECT id FROM usercredentials WHERE email = ?', [normalizedEmail]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+
+    const role = resolveRole(normalizedEmail);
+    const hashed = bcrypt.hashSync(password, 8);
+    const [result] = await query(
+      'INSERT INTO usercredentials (email, password, role) VALUES (?, ?, ?)',
+      [normalizedEmail, hashed, role]
+    );
+    await query(
+      'INSERT INTO userprofile (userId, fullName, email) VALUES (?, ?, ?)',
+      [result.insertId, trimmedName, normalizedEmail]
+    );
+
+    const publicUser = { email: normalizedEmail, role, name: trimmedName };
+    return res.status(201).json({
+      message: 'Registration successful!',
+      token: signToken(publicUser),
+      user: publicUser,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Could not create the account.' });
   }
-
-  // Role handling: derived server-side from the admin allow-list, never
-  // trusted from client input.
-  const role = resolveRole(normalizedEmail);
-  const newUser = {
-    email: normalizedEmail,
-    password: bcrypt.hashSync(password, 8),
-    role,
-    name: trimmedName,
-  };
-  users.push(newUser);
-
-  return res.status(201).json({ message: 'Registration successful!', user: toPublicUser(newUser) });
 });
 
-// POST /api/auth/login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -89,14 +87,32 @@ router.post('/login', (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const user = users.find((u) => u.email === normalizedEmail);
-  const passwordMatches = user ? bcrypt.compareSync(password, user.password) : false;
 
-  if (!user || !passwordMatches) {
-    return res.status(401).json({ error: 'Invalid email or password.' });
+  try {
+    const [rows] = await query(
+      `SELECT c.email, c.password, c.role, p.fullName AS name
+       FROM usercredentials c
+       LEFT JOIN userprofile p ON p.userId = c.id
+       WHERE c.email = ?`,
+      [normalizedEmail]
+    );
+
+    const user = rows[0];
+    const passwordMatches = user ? bcrypt.compareSync(password, user.password) : false;
+
+    if (!user || !passwordMatches) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const publicUser = { email: user.email, role: user.role, name: user.name || '' };
+    return res.status(200).json({
+      message: 'Login successful!',
+      token: signToken(publicUser),
+      user: publicUser,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Could not log in.' });
   }
-
-  return res.status(200).json({ message: 'Login successful!', user: toPublicUser(user) });
 });
 
 export default router;
