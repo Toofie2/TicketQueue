@@ -7,6 +7,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Queue from "../components/Queue";
+import { logHistoryEvent } from "../api/historyApi";
 
 const API_BASE =
   process.env.REACT_APP_API_URL || "http://localhost:4000";
@@ -169,15 +170,9 @@ function UserQueue() {
         method: "DELETE",
       });
 
-      await fetch(`${API_BASE}/api/queue/success`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: numericUserId,
-          serviceName: event?.title || "Event Pass",
-          outcome: "Left Queue" 
-        })
-      });
+      logHistoryEvent({ email, event: event.title, outcome: "Left Queue" }).catch((err) =>
+        console.error('Failed to log "Left Queue" history event:', err)
+      );
 
       toast.dismiss();
       localStorage.removeItem("cartItem"); 
