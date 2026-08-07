@@ -3,7 +3,8 @@ import SearchBar from "../components/SearchBar";
 import EventCard from "../components/EventCard";
 import "../styles/Events.css";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
+const API_BASE =
+  process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 function Events() {
   const [events, setEvents] = useState([]);
@@ -14,20 +15,44 @@ function Events() {
 
   useEffect(() => {
     let active = true;
+
     fetch(`${API_BASE}/api/events`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(
+            data.error || "Could not load events."
+          );
+        }
+
+        return data;
+      })
       .then((data) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
+
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid event data received.");
+        }
+
         setEvents(data);
+        setApiError("");
         setLoading(false);
       })
-      .catch(() => {
-        if (!active) return;
+      .catch((err) => {
+        if (!active) {
+          return;
+        }
+
+        setEvents([]);
         setApiError(
-          "Could not load events."
+          err.message || "Could not load events."
         );
         setLoading(false);
       });
+
     return () => {
       active = false;
     };
@@ -36,36 +61,51 @@ function Events() {
   const categories = [
     "All",
     ...new Set(
-      events.map((e) => (e.category || "").split(" ")[0]).filter(Boolean)
+      events
+        .map((e) => (e.category || "").split(" ")[0])
+        .filter(Boolean)
     ),
   ];
 
   const filteredEvents = events.filter((event) => {
     const text = searchTerm.trim().toLowerCase();
+
+    const title = event.title || "";
+    const category = event.category || "";
+    const location = event.location || "";
+
     const matchesSearch =
-      event.title.toLowerCase().includes(text) ||
-      event.category.toLowerCase().includes(text) ||
-      event.location.toLowerCase().includes(text);
+      title.toLowerCase().includes(text) ||
+      category.toLowerCase().includes(text) ||
+      location.toLowerCase().includes(text);
+
     const matchesCategory =
-      activeCategory === "All" || event.category.startsWith(activeCategory);
+      activeCategory === "All" ||
+      category.startsWith(activeCategory);
+
     return matchesSearch && matchesCategory;
   });
 
   return (
     <div className="events-page">
-      <header className="events-header">
+      <section className="events-hero">
         <h1>Browse Events</h1>
         <p>Find and queue up for your next experience</p>
-      </header>
+      </section>
 
-      <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+      <SearchBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
 
       <div className="category-filters">
         {categories.map((cat) => (
           <button
             key={cat}
             className={`category-pill ${
-              activeCategory === cat ? "category-pill-active" : ""
+              activeCategory === cat
+                ? "category-pill-active"
+                : ""
             }`}
             onClick={() => setActiveCategory(cat)}
           >
@@ -75,10 +115,14 @@ function Events() {
       </div>
 
       <main className="events-content">
-        {apiError && <p className="no-results">{apiError}</p>}
+        {apiError && (
+          <p className="no-results">{apiError}</p>
+        )}
 
         {loading ? (
-          <p className="events-count">Loading events…</p>
+          <p className="events-count">
+            Loading events…
+          </p>
         ) : (
           <>
             <p className="events-count">
@@ -89,11 +133,18 @@ function Events() {
             {filteredEvents.length > 0 ? (
               <div className="event-grid">
                 {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                  />
                 ))}
               </div>
             ) : (
-              <p className="no-results">No events found.</p>
+              !apiError && (
+                <p className="no-results">
+                  No events found.
+                </p>
+              )
             )}
           </>
         )}
