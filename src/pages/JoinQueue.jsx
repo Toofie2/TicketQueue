@@ -53,6 +53,14 @@ function JoinQueue() {
     setJoining(true);
     setError("");
 
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setError("Your session is missing. Please log in again.");
+      setJoining(false);
+      return;
+    }
+
     try {
       const response = await fetch(
         `${API_BASE}/api/queue/join`,
@@ -60,6 +68,7 @@ function JoinQueue() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             userId: Number(dbUserId),
@@ -105,7 +114,10 @@ function JoinQueue() {
       }
 
       if (email && event.id) {
-        notifyQueueJoin({ userId: dbUserId, serviceId: event.id }).catch(() => {});
+        notifyQueueJoin({
+          userId: email,
+          serviceId: event.id,
+        }).catch(() => {});
       }
 
       logHistoryEvent({
@@ -130,36 +142,35 @@ function JoinQueue() {
   };
 
   return (
-    <div className="queue-page-layout">
+    <div
+      className="queue-page-container"
+      style={{ padding: "60px 0" }}
+    >
       <div
-        className="queue-page-container"
-        style={{ padding: "60px 0" }}
+        className="outer-box"
+        style={{
+          maxWidth: "460px",
+          width: "90%",
+        }}
       >
         <div
-          className="outer-box"
+          className="inner-box"
           style={{
-            maxWidth: "460px",
-            width: "90%",
+            borderBottom:
+              "1px solid rgba(197, 150, 72, 0.2)",
+            paddingBottom: "20px",
           }}
         >
-          <div
-            className="inner-box"
+          <h2
+            className="queue-label"
             style={{
-              borderBottom: "1px solid rgba(197, 150, 72, 0.2)",
-              paddingBottom: "20px",
+              fontSize: "1.6rem",
+              color: "#c59648",
+              margin: 0,
             }}
           >
-            <h2
-              className="queue-label"
-              style={{
-                fontSize: "1.6rem",
-                color: "#c59648",
-                margin: 0,
-              }}
-            >
-              Ticket Confirmation
-            </h2>
-          </div>
+            Ticket Confirmation
+          </h2>
 
           <div
             style={{
