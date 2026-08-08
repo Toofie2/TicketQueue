@@ -35,11 +35,12 @@ router.patch('/:id/read', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
-    const selectSql = 'SELECT * FROM notification WHERE userId = ? ORDER BY createdAt DESC';
-    const [rows] = await query(selectSql, [Number(userId)]);
+    const cleanUserId = isNaN(Number(userId)) ? 1 : Number(userId);
+    const queryStr = 'SELECT * FROM notification WHERE userId = ? ORDER BY createdAt DESC';
+    const [rows] = await query(queryStr, [cleanUserId]);
     res.json(rows);
   } catch (err) {
-    console.error("SQL error filtering user notifications:", err.message);
+    console.error("🔴 SQL error filtering user notifications:", err.message);
     res.status(500).json({ error: "Database error retrieving user records." });
   }
 });

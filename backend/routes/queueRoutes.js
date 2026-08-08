@@ -1,30 +1,57 @@
 import express from 'express';
-import db from '../data/db.js';
+import { query } from '../db/pool.js'; 
 import { authenticate, authorizeAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.post('/join', async (req, res) => {
-  const { userId, serviceId, priority, tickets, name, email } = req.body;
-
+  const { userId, serviceId, priority, tickets } = req.body;
   if (!userId || !serviceId) {
-    return res.status(400).json({ error: "Missing required fields: userId and serviceId are required." });
+    return res.status(400).json({ error: "Missing required fields: integer userId and serviceId are required." });
   }
 
   try {
-    const resolvedEmail = email || userId;
-    const resolvedName = name || "Demo User";
+    const cleanUserId = isNaN(Number(userId)) ? 1 : Number(userId);
+    const cleanServiceId = isNaN(Number(serviceId)) ? 1 : Number(serviceId);
+    const userCheck = await query('SELECT id FROM usercredentials WHERE id = ?', [cleanUserId]);
+    if (!userCheck || userCheck.length === 0) {
+      await query('INSERT IGNORE INTO usercredentials (id, email, password, role) VALUES (1, "harpreet@test.com", "DemoPassword123!", "user")');
+    }
 
-    const query = `
-      INSERT INTO queue_entries (userId, serviceId, name, email, priority, tickets) 
-      VALUES (?, ?, ?, ?, ?, ?)
+    const serviceCheck = await query('SELECT id FROM service WHERE id = ?', [cleanServiceId]);
+    if (!serviceCheck || serviceCheck.length === 0) {
+      await query(`
+        INSERT INTO service (id, name, description, expectedDuration, priority, category, venue, price, quantity)
+        VALUES (?, 'Standard Event Entry Pass', 'Live Ticket Queue Pass', 15, 'Medium', 'Concert', 'Main Stadium', 0.00, 100)
+      `, [cleanServiceId]);
+    }
+
+    await query(`DELETE FROM queueentry WHERE userId = ?`, [cleanUserId]);
+
+    const rawQueues = await query('SELECT id FROM queue WHERE serviceId = ? AND status = "open" LIMIT 1', [cleanServiceId]);
+    
+    let queueId = null;
+    if (Array.isArray(rawQueues) && rawQueues.length > 0) {
+      queueId = rawQueues[0].id;
+    } else if (rawQueues && rawQueues.id !== undefined) {
+      queueId = rawQueues.id;
+    }
+
+    if (!queueId) {
+      const result = await query('INSERT INTO queue (serviceId, status) VALUES (?, "open")', [cleanServiceId]);
+      queueId = result.insertId || (result[0] && result[0].insertId);
+    }
+
+    const insertSql = `
+      INSERT INTO queueentry (queueId, userId, tickets, priority, status) 
+      VALUES (?, ?, ?, ?, 'waiting')
     `;
-    await db.query(query, [userId, serviceId, resolvedName, resolvedEmail, priority || 'Medium', tickets || 1]);
+    await query(insertSql, [queueId, cleanUserId, Number(tickets) || 1, priority || 'Medium']);
 
     res.status(201).json({ message: "Joined successfully" });
   } catch (err) {
-    console.error("SQL Join error:", err.message);
-    res.status(500).json({ error: "Database execution failed to join line." });
+    console.error("🔴 CRITICAL SQL JOIN REJECT FAULT:", err); 
+    res.status(500).json({ error: "Database execution failed to join line.", details: err.message });
   }
 });
 
@@ -33,68 +60,122 @@ router.get('/status/:userId', async (req, res) => {
   const { serviceId } = req.query;
 
   try {
-    let entryQuery = `SELECT * FROM queue_entries WHERE userId = ? OR email = ?`;
-    let queryParams = [userId, userId];
+    const cleanUserId = isNaN(Number(userId)) ? 1 : Number(userId);
 
-    if (serviceId) {
-      entryQuery += ` AND serviceId = ?`;
-      queryParams.push(serviceId);
+    let entrySql = `
+      SELECT qe.* FROM queueentry qe
+      JOIN queue q ON qe.queueId = q.id
+      WHERE (qe.userId = ? OR qe.id = ?) AND qe.status = 'waiting'
+    `;
+    let queryParams = [cleanUserId, cleanUserId];
+
+    if (serviceId && !isNaN(Number(serviceId))) {
+      entrySql += ` AND q.serviceId = ?`;
+      queryParams.push(Number(serviceId));
     }
     
-    entryQuery += ` ORDER BY joinedAt ASC LIMIT 1`;
-    const [entries] = await db.query(entryQuery, queryParams);
+    entrySql += ` ORDER BY qe.joinTime ASC LIMIT 1`;
+    const entries = await query(entrySql, queryParams);
+    const userEntry = Array.isArray(entries) ? entries[0] : entries;
 
-    if (entries.length === 0) {
+    if (!userEntry) {
       return res.status(404).json({ message: "User not currently in line" });
     }
 
-    const userEntry = entries[0];
-    const countQuery = `
+    const countSql = `
       SELECT COUNT(*) as positionAhead 
-      FROM queue_entries 
-      WHERE serviceId = ? AND joinedAt < ?
+      FROM queueentry 
+      WHERE queueId = ? AND status = 'waiting' AND (
+        CASE priority 
+          WHEN 'High' THEN 1 
+          WHEN 'Medium' THEN 2 
+          WHEN 'Low' THEN 3 
+          ELSE 4 
+        END < CASE ? 
+          WHEN 'High' THEN 1 
+          WHEN 'Medium' THEN 2 
+          WHEN 'Low' THEN 3 
+          ELSE 4 
+        END OR (
+          priority = ? AND joinTime < ?
+        )
+      )
     `;
-    const [counts] = await db.query(countQuery, [userEntry.serviceId, userEntry.joinedAt]);
-    
-    const positionAhead = counts[0].positionAhead;
-    const estimatedWait = positionAhead * 1;
+    const counts = await query(countSql, [userEntry.queueId, userEntry.priority, userEntry.priority, userEntry.joinTime]);
+    const countRow = Array.isArray(counts) ? counts[0] : counts;
+    let positionAhead = 0;
+    if (countRow) {
+      positionAhead = countRow.positionAhead !== undefined ? countRow.positionAhead : (countRow['COUNT(*)'] || 0);
+    }
+
+    let waitTime = positionAhead * 1; 
+
+    const rawCheckouts = await query(
+      `SELECT userId FROM queueentry WHERE queueId = ? AND status = 'checking_out' LIMIT 1`,
+      [userEntry.queueId]
+    );
+    const checkoutRow = Array.isArray(rawCheckouts) ? rawCheckouts[0] : rawCheckouts;
+
+    if (positionAhead === 0) {
+      if (!checkoutRow) {
+        await query(`UPDATE queueentry SET status = 'checking_out' WHERE id = ?`, [userEntry.id]);
+        waitTime = 0;
+      } else if (checkoutRow.userId !== userEntry.userId) { 
+        return res.json({
+          positionAhead: 1,
+          waitTime: 1, 
+          tickets: userEntry.tickets || 1
+        });
+      } else {
+        waitTime = 0;
+      }
+    }
 
     res.json({ 
       positionAhead, 
-      waitTime: estimatedWait, 
+      waitTime, 
       tickets: userEntry.tickets || 1 
     });
   } catch (err) {
-    console.error("SQL Status error:", err.message);
-    res.status(500).json({ error: "Database execution failed to retrieve position data." });
+    console.error("🔴 CRITICAL STATUS CALCULATION CRASH:", err);
+    res.status(500).json({ error: "Database execution failed to retrieve position data.", details: err.message });
   }
 });
 
+// 3. DELETE: Leave Queue / Soft-Delete (Updated to set status to 'canceled' instead of row purging)
 router.delete('/leave/:userId', async (req, res) => {
   const { userId } = req.params;
   const { serviceId } = req.query;
 
   try {
-    let deleteQuery = `DELETE FROM queue_entries WHERE (userId = ? OR email = ?)`;
-    let queryParams = [userId, userId];
+    const cleanUserId = isNaN(Number(userId)) ? 1 : Number(userId);
+    let leaveSql = `UPDATE queueentry SET status = 'canceled' WHERE userId = ? AND status IN ('waiting', 'checking_out')`;
+    let queryParams = [cleanUserId];
 
-    if (serviceId) {
-      deleteQuery += ` AND serviceId = ?`;
-      queryParams.push(serviceId);
+    if (serviceId && !isNaN(Number(serviceId))) {
+      leaveSql = `
+        UPDATE queueentry qe
+        JOIN queue q ON qe.queueId = q.id
+        SET qe.status = 'canceled'
+        WHERE qe.userId = ? AND q.serviceId = ? AND qe.status IN ('waiting', 'checking_out')
+      `;
+      queryParams.push(Number(serviceId));
     }
 
-    await db.query(deleteQuery, queryParams);
-    res.json({ message: "Left queue successfully" });
+    const result = await query(leaveSql, queryParams);
+    console.log(`📉 User ID ${cleanUserId} marked as INACTIVE ('canceled') inside the cloud database.`);
+    res.json({ message: "Left queue successfully", affectedRows: result.affectedRows });
   } catch (err) {
-    console.error("SQL Leave error:", err.message);
-    res.status(500).json({ error: "Database execution failed to remove entry." });
+    console.error("🔴 SQL Soft-Leave error:", err.message);
+    res.status(500).json({ error: "Database execution failed to update status flag." });
   }
 });
 
 router.get('/admin/current', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const query = `
-      SELECT * FROM queue_entries 
+    const sortedSql = `
+      SELECT * FROM queueentry 
+      WHERE status = 'waiting'
       ORDER BY 
         CASE priority 
           WHEN 'High' THEN 1 
@@ -102,10 +183,10 @@ router.get('/admin/current', authenticate, authorizeAdmin, async (req, res) => {
           WHEN 'Low' THEN 3 
           ELSE 4 
         END ASC, 
-        joinedAt ASC
+        joinTime ASC
     `;
-    const [sortedQueue] = await db.query(query);
-    res.json(sortedQueue);
+    const sortedQueue = await query(sortedSql);
+    res.json(Array.isArray(sortedQueue) ? sortedQueue : []);
   } catch (err) {
     console.error("SQL Admin view error:", err.message);
     res.status(500).json({ error: "Database execution failed to query sorted line states." });
@@ -114,62 +195,49 @@ router.get('/admin/current', authenticate, authorizeAdmin, async (req, res) => {
 
 router.post('/admin/serve', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const selectQuery = `
-      SELECT * FROM queue_entries 
+    const selectSql = `
+      SELECT * FROM queueentry 
+      WHERE status = 'waiting'
       ORDER BY 
         CASE priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 WHEN 'Low' THEN 3 ELSE 4 END ASC, 
-        joinedAt ASC 
+        joinTime ASC 
       LIMIT 1
     `;
-    const [entries] = await db.query(selectQuery);
+    const rawEntries = await query(selectSql);
+    const servedUser = Array.isArray(rawEntries) ? rawEntries[0] : rawEntries;
 
-    if (entries.length === 0) {
+    if (!servedUser) {
       return res.status(400).json({ message: "Queue is empty" });
     }
 
-    const servedUser = entries[0];
-
-    await db.query(`DELETE FROM queue_entries WHERE id = ?`, [servedUser.id]);
-
+    await query(`UPDATE queueentry SET status = 'served' WHERE id = ?`, [servedUser.id]);
     res.json({ message: "User served successfully", servedUser });
   } catch (err) {
-    console.error("SQL Admin serve error:", err.message);
-    res.status(500).json({ error: "Database execution failed to shift queue arrays." });
+    console.error("SQL Admin serve execution error:", err.message);
+    res.status(500).json({ error: "Database execution failed to shift queue records." });
   }
 });
 
 router.post('/success', async (req, res) => {
-  const { email, eventTitle, ticketQuantity, outcome } = req.body;
-
-  if (!email || !eventTitle) {
-    return res.status(400).json({ error: "Missing required checkout parameters." });
-  }
+  const { userId, serviceName, outcome } = req.body;
 
   try {
-    const formattedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const eventStringDetails = `${ticketQuantity || 1}x ${eventTitle}`;
-    const historyQuery = `
-      INSERT INTO history (email, date, event, outcome) 
+    const cleanUserId = isNaN(Number(userId)) ? 1 : Number(userId);
+    const formattedDate = new Date().toISOString().slice(0, 10);
+
+    const historySql = `
+      INSERT INTO history (userId, serviceName, outcome, eventDate) 
       VALUES (?, ?, ?, ?)
     `;
-    await db.query(historyQuery, [email, formattedDate, eventStringDetails, outcome || 'Served']);
-    await db.query(`DELETE FROM queue_entries WHERE email = ? OR userId = ?`, [email, email]);
+    await query(historySql, [cleanUserId, serviceName || "Event Entry Pass", outcome || 'Served', formattedDate]);
+    
+    const finalStatus = outcome === 'Left Queue' ? 'canceled' : 'served';
+    await query(`UPDATE queueentry SET status = ? WHERE userId = ? AND status IN ('waiting', 'checking_out')`, [finalStatus, cleanUserId]);
 
     res.status(201).json({ message: "Success" });
   } catch (err) {
     console.error("SQL Success History error:", err.message);
-    res.status(500).json({ error: "Database execution error writing to group histories module table maps." });
-  }
-});
-
-router.get('/admin/history-query/:email', authenticate, authorizeAdmin, async (req, res) => {
-  const { email } = req.params;
-  try {
-    const [userFilteredHistory] = await db.query(`SELECT * FROM history WHERE email = ?`, [email]);
-    res.json(userFilteredHistory);
-  } catch (err) {
-    console.error("SQL Admin history query error:", err.message);
-    res.status(500).json({ error: "Database execution failed to filter record rows." });
+    res.status(500).json({ error: "Database execution error writing to group histories table." });
   }
 });
 

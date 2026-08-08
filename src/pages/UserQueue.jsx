@@ -7,6 +7,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Queue from "../components/Queue";
+import { logHistoryEvent } from "../api/historyApi";
 
 const API_BASE =
   process.env.REACT_APP_API_URL || "http://localhost:4000";
@@ -18,17 +19,16 @@ function UserQueue() {
   const {
     username,
     email,
+    userId: contextUserId,
     isLoggedIn,
+    setIsInLine: setGlobalInLine,
+    setIsTimeUp: setGlobalTimeUp,
   } = useOutletContext();
 
   const purchaseData = location.state;
   const event = purchaseData?.event;
 
-  const userId =
-    purchaseData?.userId ||
-    email ||
-    username ||
-    "guest";
+  const userId = purchaseData?.userId || contextUserId || email || username || "guest";
 
   const [usersAhead, setUsersAhead] = useState(0);
   const [waitTime, setWaitTime] = useState(0);
@@ -62,17 +62,15 @@ function UserQueue() {
 
     const loadQueueStatus = async () => {
       try {
+        const safeUserIdForQuery = (!userId || isNaN(Number(userId))) ? 1 : Number(userId);
+        const safeServiceIdForQuery = (!event?.id || isNaN(Number(event.id))) ? 1 : Number(event.id);
+
         const response = await fetch(
-          `${API_BASE}/api/queue/status/${encodeURIComponent(userId)}` +
-            (event?.title
-              ? `?serviceId=${encodeURIComponent(event.title)}`
-              : "")
+          `${API_BASE}/api/queue/status/${encodeURIComponent(safeUserIdForQuery)}?serviceId=${encodeURIComponent(safeServiceIdForQuery)}`
         );
 
         if (response.status === 404) {
-          if (!active) {
-            return;
-          }
+          if (!active) return;
           if (wasInLineRef.current) {
             navigate("/kicked");
           } else {
@@ -85,107 +83,118 @@ function UserQueue() {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(
-            data.error ||
-              data.message ||
-              "Unable to retrieve queue status."
-          );
+          throw new Error(data.error || data.message || "Unable to retrieve queue status.");
         }
 
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         wasInLineRef.current = true;
 
         setUsersAhead(data.positionAhead);
         setStartAhead((prev) => (prev == null ? data.positionAhead : prev));
-        setWaitTime(data.waitTime);
+        setWaitTime(data.waitTime); 
+        
         if (data.tickets) {
           setTickets(data.tickets);
         }
-        setError("");
+        
+        setError(""); 
         setLoading(false);
 
-        if (data.positionAhead === 0) {
+        const currentPos = Number(data.positionAhead);
+        const currentWait = Number(data.waitTime);
+
+        if (currentPos === 0 && (currentWait === 0 || data.waitTime === "0 mins")) {
           setIsTimeUp(true);
+          if (setGlobalTimeUp) setGlobalTimeUp(true);
 
           if (!notificationShown) {
+            toast.dismiss();
+
             toast.success(
-              "🎉 Your turn has arrived! Proceed to checkout.",
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span>🎉 Your turn has arrived! Your tickets are secured.</span>
+                <button 
+                  onClick={handleCheckout} 
+                  style={{
+                    backgroundColor: '#1b2b36',
+                    color: '#c59648',
+                    border: '1px solid #c59648',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    width: 'fit-content'
+                  }}
+                >
+                  Go to Checkout 🛒
+                </button>
+              </div>,
               {
                 position: "top-right",
                 autoClose: false,
+                closeOnClick: false 
               }
             );
-
             notificationShown = true;
           }
         } else {
           setIsTimeUp(false);
+          if (setGlobalTimeUp) setGlobalTimeUp(false);
         }
       } catch (err) {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setError(err.message);
         setLoading(false);
       }
     };
 
     loadQueueStatus();
-
-    const interval = setInterval(loadQueueStatus, 5000);
+    const interval = setInterval(loadQueueStatus, 3000);
 
     return () => {
       active = false;
       clearInterval(interval);
     };
-  }, [isLoggedIn, isInLine, userId, event, navigate]);
+  }, [isLoggedIn, isInLine, userId, event, navigate, setGlobalTimeUp]);
 
-  const handleLeaveQueue = async () => {
+  const handleAbandonQueue = async () => {
+    const confirmAbandon = window.confirm("Are you sure you want to leave the queue? You will lose your spot in line!");
+    if (!confirmAbandon) return;
+
     try {
-      const response = await fetch(
-        `${API_BASE}/api/queue/leave/${encodeURIComponent(
-          userId
-        )}`,
-        {
-          method: "DELETE",
-        }
+      const numericUserId = isNaN(Number(userId)) ? 1 : Number(userId);
+      const safeServiceIdForQuery = (!event?.id || isNaN(Number(event.id))) ? 1 : Number(event.id);
+      await fetch(`${API_BASE}/api/queue/leave/${numericUserId}?serviceId=${safeServiceIdForQuery}`, {
+        method: "DELETE",
+      });
+
+      logHistoryEvent({ email, event: event.title, outcome: "Left Queue" }).catch((err) =>
+        console.error('Failed to log "Left Queue" history event:', err)
       );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            data.message ||
-            "Unable to leave queue."
-        );
-      }
-
       toast.dismiss();
+      localStorage.removeItem("cartItem"); 
+      if (setGlobalInLine) setGlobalInLine(false);
+      if (setGlobalTimeUp) setGlobalTimeUp(false);
+      
       setIsInLine(false);
       setIsTimeUp(false);
       setError("");
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleRejoinQueue = () => {
-    navigate("/join", {
-      state: purchaseData,
-    });
+    navigate("/join", { state: purchaseData });
   };
 
   const handleCheckout = () => {
     toast.dismiss();
-
-    navigate("/checkout", {
-      state: purchaseData,
-    });
+    navigate("/checkout", { state: purchaseData });
   };
 
   let titleText =
@@ -206,39 +215,36 @@ function UserQueue() {
     return (
       <div style={{ textAlign: "center", padding: "60px" }}>
         <h2>Queue information is missing.</h2>
-
-        <button onClick={() => navigate("/events")}>
-          Return to Events
-        </button>
+        <button onClick={() => navigate("/events")}>Return to Events</button>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <h2 style={{ textAlign: "center", padding: "60px" }}>
-        Loading queue status...
-      </h2>
+      <h2 style={{ textAlign: "center", padding: "60px" }}>Loading queue status...</h2>
     );
   }
 
   return (
     <div className="queue-page-layout">
-      <ToastContainer
-        position="top-right"
-        autoClose={false}
-      />
+      <style>{`
+        .success-checkout-btn, .queue-page-layout button, button[class*="leave"] {
+          border: 2px solid #c59648 !important;
+          color: #c59648 !important;
+          background: transparent !important;
+          transition: all 0.2s ease-in-out;
+        }
+        .success-checkout-btn:hover, .queue-page-layout button:hover {
+          background: #c59648 !important;
+          color: #12202a !important;
+        }
+      `}</style>
+
+      <ToastContainer position="top-right" autoClose={false} />
 
       {error && (
-        <p
-          style={{
-            color: "red",
-            textAlign: "center",
-            paddingTop: "20px",
-          }}
-        >
-          {error}
-        </p>
+        <p style={{ color: "red", textAlign: "center", paddingTop: "20px" }}>{error}</p>
       )}
 
       <Queue
@@ -252,10 +258,28 @@ function UserQueue() {
         eventTitle={event.title}
         quantity={tickets}
         totalPrice={purchaseData.totalPrice}
-        onLeaveQueue={handleLeaveQueue}
+        onLeaveQueue={handleAbandonQueue} 
         onRejoinQueue={handleRejoinQueue}
         onCheckout={handleCheckout}
       />
+      {isInLine && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "20px", paddingBottom: "40px" }}>
+          <button
+            type="button"
+            onClick={handleAbandonQueue}
+            style={{
+              padding: "12px 30px",
+              borderRadius: "8px",
+              fontWeight: "bold",
+              fontSize: "0.95rem",
+              cursor: "pointer",
+              outline: "none"
+            }}
+          >
+            Leave Queue
+          </button>
+        </div>
+      )}
     </div>
   );
 }
