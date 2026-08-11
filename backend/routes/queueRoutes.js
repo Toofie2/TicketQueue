@@ -28,20 +28,21 @@ router.post('/join', async (req, res) => {
 
     await query(`DELETE FROM queueentry WHERE userId = ?`, [cleanUserId]);
 
-    const rawQueues = await query('SELECT id FROM queue WHERE serviceId = ? AND status = "open" LIMIT 1', [cleanServiceId]);
-    
-    let queueId = null;
-    if (Array.isArray(rawQueues) && rawQueues.length > 0) {
-      queueId = rawQueues[0].id;
-    } else if (rawQueues && rawQueues.id !== undefined) {
-      queueId = rawQueues.id;
-    }
+    const [queueRows] = await query(
+  'SELECT id FROM queue WHERE serviceId = ? AND status = "open" LIMIT 1',
+  [cleanServiceId]
+);
 
-    if (!queueId) {
-      const result = await query('INSERT INTO queue (serviceId, status) VALUES (?, "open")', [cleanServiceId]);
-      queueId = result.insertId || (result[0] && result[0].insertId);
-    }
+let queueId = queueRows[0]?.id || null;
 
+if (!queueId) {
+  const [result] = await query(
+    'INSERT INTO queue (serviceId, status) VALUES (?, "open")',
+    [cleanServiceId]
+  );
+
+  queueId = result.insertId;
+}
     const insertSql = `
       INSERT INTO queueentry (queueId, userId, tickets, priority, status) 
       VALUES (?, ?, ?, ?, 'waiting')
@@ -63,11 +64,11 @@ router.get('/status/:userId', async (req, res) => {
     const cleanUserId = isNaN(Number(userId)) ? 1 : Number(userId);
 
     let entrySql = `
-      SELECT qe.* FROM queueentry qe
-      JOIN queue q ON qe.queueId = q.id
-      WHERE (qe.userId = ? OR qe.id = ?) AND qe.status = 'waiting'
-    `;
-    let queryParams = [cleanUserId, cleanUserId];
+  SELECT qe.* FROM queueentry qe
+  JOIN queue q ON qe.queueId = q.id
+  WHERE qe.userId = ? AND qe.status IN ('waiting', 'checking_out')
+`;
+let queryParams = [cleanUserId];
 
     if (serviceId && !isNaN(Number(serviceId))) {
       entrySql += ` AND q.serviceId = ?`;
@@ -75,8 +76,8 @@ router.get('/status/:userId', async (req, res) => {
     }
     
     entrySql += ` ORDER BY qe.joinTime ASC LIMIT 1`;
-    const entries = await query(entrySql, queryParams);
-    const userEntry = Array.isArray(entries) ? entries[0] : entries;
+    const [entryRows] = await query(entrySql, queryParams);
+    const userEntry = entryRows[0];
 
     if (!userEntry) {
       return res.status(404).json({ message: "User not currently in line" });
@@ -101,8 +102,14 @@ router.get('/status/:userId', async (req, res) => {
         )
       )
     `;
-    const counts = await query(countSql, [userEntry.queueId, userEntry.priority, userEntry.priority, userEntry.joinTime]);
-    const countRow = Array.isArray(counts) ? counts[0] : counts;
+    const [countRows] = await query(countSql, [
+  userEntry.queueId,
+  userEntry.priority,
+  userEntry.priority,
+  userEntry.joinTime
+]);
+
+const countRow = countRows[0];
     let positionAhead = 0;
     if (countRow) {
       positionAhead = countRow.positionAhead !== undefined ? countRow.positionAhead : (countRow['COUNT(*)'] || 0);
@@ -110,11 +117,12 @@ router.get('/status/:userId', async (req, res) => {
 
     let waitTime = positionAhead * 1; 
 
-    const rawCheckouts = await query(
-      `SELECT userId FROM queueentry WHERE queueId = ? AND status = 'checking_out' LIMIT 1`,
-      [userEntry.queueId]
-    );
-    const checkoutRow = Array.isArray(rawCheckouts) ? rawCheckouts[0] : rawCheckouts;
+    const [checkoutRows] = await query(
+  `SELECT userId FROM queueentry WHERE queueId = ? AND status = 'checking_out' LIMIT 1`,
+  [userEntry.queueId]
+);
+
+const checkoutRow = checkoutRows[0];
 
     if (positionAhead === 0) {
       if (!checkoutRow) {
