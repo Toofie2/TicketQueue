@@ -42,7 +42,7 @@ function Login() {
       // Authenticate against the backend Authentication Module; the role
       // (User vs Administrator) comes back from the server.
       const { user, token } = await loginUser({ email, password });
-      handleLogin(user.email, user.role, token);
+      handleLogin(user.email, user.role, token, user.id);
     } catch (err) {
       setErrorField('password');
       setError(`Error: ${err.message}`);

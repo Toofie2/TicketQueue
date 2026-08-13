@@ -53,7 +53,7 @@ CREATE TABLE queueentry (
   tickets INT NOT NULL DEFAULT 1,
   priority ENUM('High', 'Medium', 'Low') NOT NULL DEFAULT 'Medium',
   joinTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  status ENUM('waiting', 'served', 'canceled') NOT NULL DEFAULT 'waiting',
+  status ENUM('waiting', 'checking_out', 'served', 'canceled') NOT NULL DEFAULT 'waiting',
   FOREIGN KEY (queueId) REFERENCES queue(id) ON DELETE CASCADE,
   FOREIGN KEY (userId) REFERENCES usercredentials(id) ON DELETE CASCADE
 );

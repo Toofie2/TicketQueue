@@ -65,7 +65,12 @@ router.post('/register', async (req, res) => {
       [result.insertId, trimmedName, normalizedEmail]
     );
 
-    const publicUser = { email: normalizedEmail, role, name: trimmedName };
+    const publicUser = {
+      id: result.insertId,
+      email: normalizedEmail,
+      role,
+      name: trimmedName
+    };
     return res.status(201).json({
       message: 'Registration successful!',
       token: signToken(publicUser),
@@ -90,7 +95,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const [rows] = await query(
-      `SELECT c.email, c.password, c.role, p.fullName AS name
+      `SELECT c.id, c.email, c.password, c.role, p.fullName AS name
        FROM usercredentials c
        LEFT JOIN userprofile p ON p.userId = c.id
        WHERE c.email = ?`,
@@ -104,7 +109,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    const publicUser = { email: user.email, role: user.role, name: user.name || '' };
+    const publicUser = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name || ''
+    };
+    
     return res.status(200).json({
       message: 'Login successful!',
       token: signToken(publicUser),

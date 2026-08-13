@@ -12,33 +12,53 @@ function EventDetails() {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [recommendationData, setRecommendationData] = useState(null);
 
   useEffect(() => {
-    let active = true;
+  let active = true;
 
-    fetch(`${API_BASE}/api/events/${id}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!active) {
-          return;
-        }
+  // Load the event details.
+  fetch(`${API_BASE}/api/events/${id}`)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (!active) {
+        return;
+      }
 
-        setEvent(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (!active) {
-          return;
-        }
+      setEvent(data);
+      setLoading(false);
+    })
+    .catch(() => {
+      if (!active) {
+        return;
+      }
 
-        setEvent(null);
-        setLoading(false);
-      });
+      setEvent(null);
+      setLoading(false);
+    });
 
-    return () => {
-      active = false;
-    };
-  }, [id]);
+  // Load the smart shorter-wait recommendation.
+  fetch(`${API_BASE}/api/events/${id}/recommendation`)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (!active) {
+        return;
+      }
+
+      setRecommendationData(data);
+    })
+    .catch(() => {
+      if (!active) {
+        return;
+      }
+
+      setRecommendationData(null);
+    });
+
+  return () => {
+    active = false;
+  };
+}, [id]);
 
   const totalPrice = event ? event.price * quantity : 0;
 
@@ -107,6 +127,28 @@ function EventDetails() {
         <p>
           <strong>Price:</strong> ${event.price}
         </p>
+
+        {recommendationData?.recommendation && (
+  <div className="smart-recommendation">
+    <h3>Shorter Wait Available</h3>
+
+    <p>
+      {recommendationData.recommendation.title} currently has an estimated
+      wait of {recommendationData.recommendation.estimatedWait} minute(s),
+      compared with {recommendationData.currentEvent.estimatedWait} minute(s)
+      for this event.
+    </p>
+
+    <button
+      className="buy-button"
+      onClick={() =>
+        navigate(`/event/${recommendationData.recommendation.id}`)
+      }
+    >
+      View Alternative
+    </button>
+  </div>
+)}
 
         <div className="ticket-section">
           <label>

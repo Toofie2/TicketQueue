@@ -9,6 +9,7 @@ function App() {
   const [username, setUsername] = useState('Guest');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
+  const [userId, setUserId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const [isInLine, setIsInLine] = useState(false);
@@ -25,9 +26,9 @@ function App() {
   });
 
   useEffect(() => {
-    if (!isInLine || isTimeUp) return;
+    if (!isInLine || isTimeUp || !userId) return;
 
-    const userIdentifier = email || "guest";
+    const userIdentifier = userId;
 
     const syncDatabaseQueueState = () => {
       fetch(`http://localhost:4000/api/queue/status/${userIdentifier}`)
@@ -94,11 +95,11 @@ function App() {
         activeToastIdRef.current = null;
       }
     };
-  }, [isInLine, isTimeUp, email, activeTicket.eventTitle, navigate]);
+  }, [isInLine, isTimeUp, userId, activeTicket.eventTitle, navigate]);
 
   // Called after the backend confirms a successful login/registration.
   // The role comes from the backend response, never guessed on the client.
-  const handleLogin = (userEmail, userRole = 'user', userToken) => {
+  const handleLogin = (userEmail, userRole = 'user', userToken, loggedInUserId) => {
     const nameFromEmail = userEmail.split('@')[0];
     const formattedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
     if (userToken) {
@@ -107,6 +108,7 @@ function App() {
     setUsername(formattedName);
     setEmail(userEmail);
     setRole(userRole);
+    setUserId(loggedInUserId);
     setIsLoggedIn(true);
 
     if (userRole === 'admin') {
@@ -122,6 +124,7 @@ function App() {
     setUsername(''); // This clears the name
     setEmail('');
     setRole('user');
+    setUserId(null);
     setIsLoggedIn(false); // This tells the Navbar to change back
     setIsInLine(false);
     if (activeToastIdRef.current) {
@@ -140,7 +143,7 @@ function App() {
       <div className="page-router-content">
         {/* Pass handleLogout down to the Dashboard via context */}
         <Outlet context={{ 
-          handleLogin, handleLogout, username, email, role, isLoggedIn,
+          handleLogin, handleLogout, username, email, role, userId, isLoggedIn,
           isInLine, setIsInLine, isTimeUp, setIsTimeUp, usersAhead, 
           waitTime, activeTicket, setActiveTicket, secondsElapsed, setSecondsElapsed
         }} />
