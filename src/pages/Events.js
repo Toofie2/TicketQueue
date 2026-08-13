@@ -10,6 +10,7 @@ function Events() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
+  const [sortOption, setSortOption] = useState("default");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
@@ -86,6 +87,26 @@ function Events() {
     return matchesSearch && matchesCategory;
   });
 
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+  if (sortOption === "date-asc") {
+    return new Date(a.date) - new Date(b.date);
+  }
+
+  if (sortOption === "date-desc") {
+    return new Date(b.date) - new Date(a.date);
+  }
+
+  if (sortOption === "price-asc") {
+    return Number(a.price) - Number(b.price);
+  }
+
+  if (sortOption === "price-desc") {
+    return Number(b.price) - Number(a.price);
+  }
+
+  return 0;
+});
+
   return (
     <div className="events-page">
       <section className="events-hero">
@@ -114,6 +135,21 @@ function Events() {
         ))}
       </div>
 
+      <div className="sort-control">
+        <label htmlFor="event-sort">Sort by: </label>
+        <select
+          id="event-sort"
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+        >
+          <option value="default">Default</option>
+          <option value="date-asc">Date: Soonest</option>
+          <option value="date-desc">Date: Latest</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
+      </div>
+
       <main className="events-content">
         {apiError && (
           <p className="no-results">{apiError}</p>
@@ -126,13 +162,13 @@ function Events() {
         ) : (
           <>
             <p className="events-count">
-              {filteredEvents.length} event
-              {filteredEvents.length !== 1 ? "s" : ""} found
+              {sortedEvents.length} event
+              {sortedEvents.length !== 1 ? "s" : ""} found
             </p>
 
-            {filteredEvents.length > 0 ? (
+            {sortedEvents.length > 0 ? (
               <div className="event-grid">
-                {filteredEvents.map((event) => (
+                {sortedEvents.map((event) => (
                   <EventCard
                     key={event.id}
                     event={event}

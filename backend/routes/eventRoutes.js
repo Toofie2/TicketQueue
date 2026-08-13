@@ -4,10 +4,29 @@ import { query } from '../db/pool.js';
 const router = express.Router();
 
 const SELECT_EVENTS = `
-  SELECT s.id, s.name, s.category, s.venue, s.eventTime, s.eventDate, s.price,
-         q.status AS queueStatus
+  SELECT
+    s.id,
+    s.name,
+    s.category,
+    s.venue,
+    s.eventTime,
+    s.eventDate,
+    s.price,
+    CASE
+      WHEN EXISTS (
+        SELECT 1
+        FROM queue q
+        WHERE q.serviceId = s.id
+          AND q.status = 'open'
+      ) THEN 'open'
+      WHEN EXISTS (
+        SELECT 1
+        FROM queue q
+        WHERE q.serviceId = s.id
+      ) THEN 'closed'
+      ELSE NULL
+    END AS queueStatus
   FROM service s
-  LEFT JOIN queue q ON q.serviceId = s.id
 `;
 
 function toEvent(row) {
