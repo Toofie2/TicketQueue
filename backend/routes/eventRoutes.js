@@ -14,7 +14,6 @@ const SELECT_EVENTS = `
     s.price,
     q.status AS queueStatus
   FROM service s
-  LEFT JOIN queue q ON q.serviceId = s.id
 `;
 
 function toEvent(row) {
