@@ -35,9 +35,16 @@ router.patch('/:id/read', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
-    const cleanUserId = isNaN(Number(userId)) ? 1 : Number(userId);
-    const queryStr = 'SELECT * FROM notification WHERE userId = ? ORDER BY createdAt DESC';
-    const [rows] = await query(queryStr, [cleanUserId]);
+    let numericId;
+    if (!isNaN(Number(userId))) {
+      numericId = Number(userId);
+    } else {
+      const [users] = await query('SELECT id FROM usercredentials WHERE email = ?', [String(userId).trim().toLowerCase()]);
+      if (users.length === 0) return res.json([]);
+      numericId = users[0].id;
+    }
+    const queryStr = 'SELECT * FROM notification WHERE userId = ? ORDER BY createdAt DESC, id DESC';
+    const [rows] = await query(queryStr, [numericId]);
     res.json(rows);
   } catch (err) {
     console.error("🔴 SQL error filtering user notifications:", err.message);

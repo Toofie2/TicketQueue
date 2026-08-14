@@ -5,7 +5,6 @@ import {
   useOutletContext,
 } from "react-router-dom";
 import { logHistoryEvent } from "../api/historyApi";
-import { notifyQueueJoin } from "../api/notificationsApi";
 import "../styles/queue.css";
 
 const API_BASE =
@@ -111,13 +110,6 @@ function JoinQueue() {
 
       if (setIsInLine) {
         setIsInLine(true);
-      }
-
-      if (email && event.id) {
-        notifyQueueJoin({
-          userId: email,
-          serviceId: event.id,
-        }).catch(() => {});
       }
 
       logHistoryEvent({

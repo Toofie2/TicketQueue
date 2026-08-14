@@ -1,5 +1,3 @@
-import { useOutletContext } from "react-router-dom";
-import { logHistoryEvent } from "../api/historyApi";
 import "../styles/queue.css";
 
 function Queue({
@@ -17,8 +15,6 @@ function Queue({
   onRejoinQueue,
   onCheckout,
 }) {
-  const { email } = useOutletContext();
-
   const progressPercent =
     usersAhead === 0
       ? 100
@@ -30,25 +26,6 @@ function Queue({
         : 0;
 
   const handleLeaveQueue = () => {
-    const confirmLeave = window.confirm(
-      "Are you sure you want to leave the queue? You will lose your spot!"
-    );
-
-    if (!confirmLeave) {
-      return;
-    }
-
-    logHistoryEvent({
-      email,
-      event: eventTitle,
-      outcome: "Left Queue",
-    }).catch((err) =>
-      console.error(
-        'Failed to log "Left Queue" history event:',
-        err
-      )
-    );
-
     onLeaveQueue();
   };
 

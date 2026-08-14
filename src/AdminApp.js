@@ -4,6 +4,7 @@ import AdminNav from "./components/AdminNav";
 import AdminDashboard from "./pages/AdminDashboard";
 import ServiceManagement from "./pages/ServiceManagement";
 import QueueManagement from "./pages/QueueManagement";
+import Reporting from "./pages/Reporting";
 import { initialSales, initialQueue } from "./data/adminMockData";
 import "./styles/Admin.css";
 
@@ -31,6 +32,7 @@ function AdminApp() {
             <QueueManagement sales={sales} queue={queue} setQueue={setQueue} />
           }
         />
+        <Route path="reports" element={<Reporting />} />
       </Routes>
     </>
   );

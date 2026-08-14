@@ -36,19 +36,24 @@ const MOCK_PEOPLE = [
   { name: 'Ava Martinez', priority: 'High' },
   { name: 'Liam Chen', priority: 'Medium' },
   { name: 'Noah Patel', priority: 'Low' },
+  { name: 'Sofia Reyes', priority: 'Medium' },
+  { name: 'Ethan Brooks', priority: 'High' },
 ];
 
+const MOCK_COUNTS = [2, 4, 1, 3, 2, 4, 5, 2, 1, 3, 3, 3, 2];
+
 const buildQueue = () =>
-  buildServices().flatMap((service) =>
-    MOCK_PEOPLE.map((person, i) => ({
+  buildServices().flatMap((service, index) => {
+    const count = MOCK_COUNTS[index] ?? 3;
+    return MOCK_PEOPLE.slice(0, count).map((person, i) => ({
       userId: `mock-${service.id}-${i}`,
       email: `mock-${service.id}-${i}@demo.com`,
       serviceId: service.name,
       name: person.name,
       priority: person.priority,
-      joinedAt: new Date(),
-    }))
-  );
+      joinedAt: new Date(Date.now() + i),
+    }));
+  });
 
 export const db = {
   services: buildServices(),

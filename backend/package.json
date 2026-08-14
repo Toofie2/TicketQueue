@@ -18,7 +18,8 @@
     "dotenv": "^17.4.2",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.23.2"
+    "mysql2": "^3.23.2",
+    "pdfkit": "^0.19.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",
