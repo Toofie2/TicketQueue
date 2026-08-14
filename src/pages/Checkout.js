@@ -5,7 +5,7 @@ import '../styles/queue.css';
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 function Checkout() {
-  const { email, userId, activeTicket, setIsInLine, setIsTimeUp } = useOutletContext();
+  const { userId, activeTicket, setIsInLine, setIsTimeUp } = useOutletContext();
   const navigate = useNavigate();
 
   const [cardNumber, setCardNumber] = useState('4111 2222 3333 4444');

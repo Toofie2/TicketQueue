@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   useLocation,
   useNavigate,
@@ -8,6 +8,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Queue from "../components/Queue";
 import { logHistoryEvent } from "../api/historyApi";
+import crowdImage from "../assets/crowd.png";
 
 const API_BASE =
   process.env.REACT_APP_API_URL || "http://localhost:4000";
@@ -22,7 +23,6 @@ function UserQueue() {
     userId: contextUserId,
     isLoggedIn,
     setIsInLine: setGlobalInLine,
-    setIsTimeUp: setGlobalTimeUp,
   } = useOutletContext();
 
   const purchaseData = location.state;
@@ -34,7 +34,7 @@ function UserQueue() {
   const [waitTime, setWaitTime] = useState(0);
   const [startAhead, setStartAhead] = useState(null);
   const [tickets, setTickets] = useState(purchaseData?.quantity || 1);
-  const [isTimeUp, setIsTimeUp] = useState(false);
+  const [localIsTimeUp, setLocalIsTimeUp] = useState(false); 
   const [isInLine, setIsInLine] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -52,6 +52,44 @@ function UserQueue() {
     }
   }, [isLoggedIn, navigate]);
 
+  const serializedStateString = JSON.stringify(purchaseData);
+
+  const handleAbandonQueue = useCallback(async () => {
+    try {
+      const numericUserId = isNaN(Number(userId)) ? 1 : Number(userId);
+      const safeServiceIdForQuery = (!event?.id || isNaN(Number(event.id))) ? 1 : Number(event.id);
+      
+      await fetch(`${API_BASE}/api/queue/leave/${numericUserId}?serviceId=${safeServiceIdForQuery}`, {
+        method: "DELETE",
+      });
+
+      logHistoryEvent({ email, event: event?.title || "Event Pass", outcome: "Left Queue" }).catch((err) =>
+        console.error(err)
+      );
+
+      toast.dismiss();
+      localStorage.removeItem("cartItem"); 
+      setIsInLine(false);
+      setLocalIsTimeUp(false);
+      if (setGlobalInLine) setGlobalInLine(false);
+      setError("");
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [userId, event, email, navigate, setGlobalInLine]);
+
+  const handleRejoinQueue = useCallback(() => {
+    navigate("/join", { state: JSON.parse(serializedStateString) });
+  }, [navigate, serializedStateString]);
+
+  const handleCheckout = useCallback(() => {
+    toast.dismiss();
+    setIsInLine(false);
+    if (setGlobalInLine) setGlobalInLine(false);
+    navigate("/checkout", { state: JSON.parse(serializedStateString) });
+  }, [navigate, serializedStateString, setGlobalInLine]);
+
   useEffect(() => {
     if (!isLoggedIn || !isInLine || !userId) {
       return;
@@ -66,7 +104,7 @@ function UserQueue() {
         const safeServiceIdForQuery = (!event?.id || isNaN(Number(event.id))) ? 1 : Number(event.id);
 
         const response = await fetch(
-          `${API_BASE}/api/queue/status/${encodeURIComponent(safeUserIdForQuery)}?serviceId=${encodeURIComponent(safeServiceIdForQuery)}`
+          `${API_BASE}/api/queue/status/${encodeURIComponent(safeUserIdForQuery)}?serviceId=${encodeURIComponent(safeServiceIdForQuery)}&status=waiting`
         );
 
         if (response.status === 404) {
@@ -105,15 +143,14 @@ function UserQueue() {
         const currentWait = Number(data.waitTime);
 
         if (currentPos === 0 && (currentWait === 0 || data.waitTime === "0 mins")) {
-          setIsTimeUp(true);
-          if (setGlobalTimeUp) setGlobalTimeUp(true);
+          setLocalIsTimeUp(true);
 
           if (!notificationShown) {
             toast.dismiss();
 
             toast.success(
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span>🎉 Your turn has arrived! Your tickets are secured.</span>
+                <span>Your turn has arrived! Your tickets are secured.</span>
                 <button 
                   onClick={handleCheckout} 
                   style={{
@@ -128,7 +165,7 @@ function UserQueue() {
                     width: 'fit-content'
                   }}
                 >
-                  Go to Checkout 🛒
+                  Go to Checkout
                 </button>
               </div>,
               {
@@ -140,8 +177,7 @@ function UserQueue() {
             notificationShown = true;
           }
         } else {
-          setIsTimeUp(false);
-          if (setGlobalTimeUp) setGlobalTimeUp(false);
+          setLocalIsTimeUp(false);
         }
       } catch (err) {
         if (!active) return;
@@ -157,56 +193,18 @@ function UserQueue() {
       active = false;
       clearInterval(interval);
     };
-  }, [isLoggedIn, isInLine, userId, event, navigate, setGlobalTimeUp]);
-
-  const handleAbandonQueue = async () => {
-    const confirmAbandon = window.confirm("Are you sure you want to leave the queue? You will lose your spot in line!");
-    if (!confirmAbandon) return;
-
-    try {
-      const numericUserId = isNaN(Number(userId)) ? 1 : Number(userId);
-      const safeServiceIdForQuery = (!event?.id || isNaN(Number(event.id))) ? 1 : Number(event.id);
-      await fetch(`${API_BASE}/api/queue/leave/${numericUserId}?serviceId=${safeServiceIdForQuery}`, {
-        method: "DELETE",
-      });
-
-      logHistoryEvent({ email, event: event.title, outcome: "Left Queue" }).catch((err) =>
-        console.error('Failed to log "Left Queue" history event:', err)
-      );
-
-      toast.dismiss();
-      localStorage.removeItem("cartItem"); 
-      if (setGlobalInLine) setGlobalInLine(false);
-      if (setGlobalTimeUp) setGlobalTimeUp(false);
-      
-      setIsInLine(false);
-      setIsTimeUp(false);
-      setError("");
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const handleRejoinQueue = () => {
-    navigate("/join", { state: purchaseData });
-  };
-
-  const handleCheckout = () => {
-    toast.dismiss();
-    navigate("/checkout", { state: purchaseData });
-  };
+  }, [isLoggedIn, isInLine, userId, event, navigate, handleCheckout]);
 
   let titleText =
-    `🏆 Good news, ${currentUser.name}! ` +
+    `Good news, ${currentUser.name}! ` +
     `You are in line for ${tickets} ` +
-    `${event?.title || "event"} ticket(s). 🏆`;
+    `${event?.title || "event"} ticket(s).`;
 
   if (!isInLine) {
     titleText = "You are currently out of line.";
-  } else if (isTimeUp) {
+  } else if (localIsTimeUp) {
     titleText =
-      `🛒 ${currentUser.name}, your ` +
+      `${currentUser.name}, your ` +
       `${tickets} ticket(s) for ` +
       `${event?.title || "the event"} are ready!`;
   }
@@ -227,7 +225,7 @@ function UserQueue() {
   }
 
   return (
-    <div className="queue-page-layout">
+    <div className="queue-page-layout" style={{ minHeight: "100vh", position: "relative", boxSizing: "border-box" }}>
       <style>{`
         .success-checkout-btn, .queue-page-layout button, button[class*="leave"] {
           border: 2px solid #c59648 !important;
@@ -247,39 +245,31 @@ function UserQueue() {
         <p style={{ color: "red", textAlign: "center", paddingTop: "20px" }}>{error}</p>
       )}
 
-      <Queue
-        currentUser={currentUser}
-        usersAhead={usersAhead}
-        startAhead={startAhead}
-        waitTime={waitTime}
-        isTimeUp={isTimeUp}
-        isInLine={isInLine}
-        titleText={titleText}
-        eventTitle={event.title}
-        quantity={tickets}
-        totalPrice={purchaseData.totalPrice}
-        onLeaveQueue={handleAbandonQueue} 
-        onRejoinQueue={handleRejoinQueue}
-        onCheckout={handleCheckout}
-      />
-      {isInLine && (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "20px", paddingBottom: "40px" }}>
-          <button
-            type="button"
-            onClick={handleAbandonQueue}
-            style={{
-              padding: "12px 30px",
-              borderRadius: "8px",
-              fontWeight: "bold",
-              fontSize: "0.95rem",
-              cursor: "pointer",
-              outline: "none"
-            }}
-          >
-            Leave Queue
-          </button>
-        </div>
-      )}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <Queue
+          currentUser={currentUser}
+          usersAhead={usersAhead}
+          startAhead={startAhead}
+          waitTime={waitTime}
+          isTimeUp={localIsTimeUp}
+          isInLine={isInLine}
+          titleText={titleText}
+          eventTitle={event.title}
+          quantity={tickets}
+          totalPrice={purchaseData.totalPrice}
+          onLeaveQueue={handleAbandonQueue} 
+          onRejoinQueue={handleRejoinQueue}
+          onCheckout={handleCheckout}
+        />
+      </div>
+
+      <div style={{ position: "fixed", bottom: 0, left: 0, width: "100vw", height: "auto", overflow: "hidden", display: "flex", justifyContent: "center", pointerEvents: "none", zIndex: 0, opacity: 0.5 }}>
+        <img 
+          src={crowdImage} 
+          alt="Queue Crowd Background" 
+          style={{ width: "100%", height: "auto", display: "block" }} 
+        />
+      </div>
     </div>
   );
 }

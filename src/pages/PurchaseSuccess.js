@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import '../styles/PurchaseSuccess.css'; // Targets your updated theme styles sheet
+import '../styles/PurchaseSuccess.css';
 
 function SuccessPage() {
   const location = useLocation();
@@ -11,14 +11,10 @@ function SuccessPage() {
     <div className="success-page">
       <div className="success-card">
         <div className="success-icon-badge">🎉</div>
-        <h1>Allocation Secured!</h1>
+        <h1>Tickets Secured!</h1>
         
         <div className="success-divider"></div>
         
-        <p className="success-main-msg">
-          Your order has been authorized and safely registered into the transaction ledger database maps.
-        </p>
-
         {activeTicket && (
           <div className="receipt-summary-box">
             <p><strong>Event:</strong> {activeTicket.eventTitle || "Standard Event Entry Pass"}</p>
