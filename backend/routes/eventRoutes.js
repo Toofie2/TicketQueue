@@ -3,51 +3,62 @@ import { query } from '../db/pool.js';
 
 const router = express.Router();
 
+// 🌟 FIX 1: Added s.priority explicitly to the SELECT DISTINCT columns list 
+// to permanently resolve the ORDER BY column validation mismatch crash!
 const SELECT_EVENTS = `
-  SELECT
+  SELECT DISTINCT
     s.id,
     s.name,
+    s.description,
     s.category,
     s.venue,
     s.eventTime,
     s.eventDate,
     s.price,
-    CASE
-      WHEN EXISTS (
-        SELECT 1
-        FROM queue q
-        WHERE q.serviceId = s.id
-          AND q.status = 'open'
-      ) THEN 'open'
-      WHEN EXISTS (
-        SELECT 1
-        FROM queue q
-        WHERE q.serviceId = s.id
-      ) THEN 'closed'
-      ELSE NULL
-    END AS queueStatus
+    s.image,
+    s.priority, -- 👈 Added here safely to unblock priority sorting checks
+    q.status AS queueStatus
   FROM service s
+  LEFT JOIN queue q ON q.serviceId = s.id
 `;
 
 function toEvent(row) {
   return {
     id: row.id,
     title: row.name,
+    description: row.description,
     category: row.category || '',
     date: row.eventDate,
     time: row.eventTime || '',
     location: row.venue,
     price: Number(row.price),
+    image: row.image || '',
+    priority: row.priority || 'Medium',
     queueOpen: row.queueStatus ? row.queueStatus === 'open' : true,
   };
 }
 
+// 3. GET: Fetch All Events (Default Priority Sorting Matrix)
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await query(`${SELECT_EVENTS} ORDER BY s.id`);
+    // 🌟 FIX 2: Clean, valid, and fully cross-compatible priority classification sort string
+    const prioritySortSql = `
+      ${SELECT_EVENTS} 
+      ORDER BY 
+        CASE s.priority 
+          WHEN 'High' THEN 1 
+          WHEN 'Medium' THEN 2 
+          WHEN 'Low' THEN 3 
+          ELSE 4 
+        END ASC,
+        s.id ASC
+    `;
+
+    const [rows] = await query(prioritySortSql);
     res.json(rows.map(toEvent));
-  } catch {
-    res.status(500).json({ error: 'Could not load events.' });
+  } catch (err) {
+    console.error("🔴 CRITICAL API /EVENTS UNHANDLED FAULT:", err);
+    res.status(500).json({ error: 'Could not load events.', details: err.message });
   }
 });
 
@@ -161,7 +172,6 @@ router.get('/:id/recommendation', async (req, res) => {
     });
   } catch (error) {
     console.error('Recommendation error:', error);
-
     res.status(500).json({
       error: 'Could not generate a smart recommendation.',
     });
@@ -180,8 +190,9 @@ router.get('/:id', async (req, res) => {
     }
 
     res.json(toEvent(rows[0]));
-  } catch {
-    res.status(500).json({ error: 'Could not load the event.' });
+  } catch (err) {
+    console.error("🔴 CRITICAL /EVENTS/:ID SINGLE REJECT FAULT:", err);
+    res.status(500).json({ error: 'Could not load the event.', details: err.message });
   }
 });
 

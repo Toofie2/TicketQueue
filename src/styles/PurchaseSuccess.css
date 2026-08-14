@@ -3,22 +3,95 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #ffffff;
+  background-color: #0b151c;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .success-card {
   text-align: center;
   padding: 40px;
   border-radius: 16px;
-  background-color: #f3eadc;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  background-color: #12202a;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(197, 150, 72, 0.2);
 }
 
-.success-card h1 {
-  color: #102f3d;
+.success-icon-badge {
+  font-size: 3.5rem;
   margin-bottom: 15px;
 }
 
+.success-card h1 {
+  color: #c59648;
+  margin: 0 0 10px 0;
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.success-divider {
+  width: 60px;
+  height: 2px;
+  background-color: rgba(197, 150, 72, 0.3);
+  margin: 15px auto;
+}
+
 .success-card p {
-  font-size: 18px;
+  font-size: 15px;
+  color: #ffffff;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.success-main-msg {
+  color: #98a69d !important;
+  margin-bottom: 20px !important;
+}
+
+.receipt-summary-box {
+  background: #1b2b36;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 25px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid #16242d;
+}
+
+.receipt-summary-box p {
+  font-size: 14px;
+}
+
+.receipt-summary-box strong {
+  color: #98a69d;
+}
+
+.gold-accent-text {
+  color: #c59648;
+  font-weight: 700;
+}
+
+/* 🌟 ACTION BUTTON CONTROL OVERRIDES */
+.return-dashboard-btn {
+  width: 100%;
+  background: transparent;
+  border: 2px solid #c59648 !important;
+  color: #c59648 !important;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.return-dashboard-btn:hover {
+  background: #c59648 !important;
+  color: #12202a !important;
 }

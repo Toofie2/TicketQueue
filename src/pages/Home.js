@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
-import FeaturedBanner from "../components/FeaturedBanner";
 import EventCard from "../components/EventCard";
 import "../styles/Home.css";
+import worldCupBannerImage from "../assets/worldCup2026Banner.jpg"; 
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -13,11 +13,15 @@ function Home() {
   useEffect(() => {
     let active = true;
     fetch(`${API_BASE}/api/events`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("API Route Failure");
+        return res.json();
+      })
       .then((data) => {
         if (active && Array.isArray(data)) setEvents(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Fetch events error:", err);
         if (active) setEvents([]);
       });
     return () => {
@@ -30,14 +34,17 @@ function Home() {
   const filteredEvents = searchText
     ? events.filter(
         (event) =>
-          event.title.toLowerCase().includes(searchText) ||
+          (event.title || "").toLowerCase().includes(searchText) ||
           (event.category || "").toLowerCase().includes(searchText) ||
-          event.location.toLowerCase().includes(searchText)
+          (event.location || "").toLowerCase().includes(searchText)
       )
     : Object.values(
         events.reduce((acc, event) => {
-          const primary = (event.category || "").split(" ")[0];
-          if (!acc[primary]) acc[primary] = event;
+          const primaryCategory = (event.category || "General").split(" ")[0];
+          
+          if (!acc[primaryCategory]) {
+            acc[primaryCategory] = event;
+          }
           return acc;
         }, {})
       );
@@ -48,7 +55,13 @@ function Home() {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
       />
-      <FeaturedBanner />
+      <div className="world-cup-featured-banner" style={{ margin: "20px auto", maxWidth: "1200px", width: "95%", borderRadius: "12px", overflow: "hidden", boxShadow: "0 4px 15px rgba(0,0,0,0.2)" }}>
+        <img 
+          src={worldCupBannerImage} 
+          alt="FIFA World Cup 2026 Secure Tickets Allocation Queue" 
+          style={{ width: "100%", height: "auto", display: "block", objectFit: "cover", maxHeight: "360px" }}
+        />
+      </div>
 
       <main className="home-content">
         <h2 className="deals-title">Good deals just for you</h2>
@@ -60,7 +73,9 @@ function Home() {
             ))}
           </div>
         ) : (
-          <p className="no-results">No events found.</p>
+          <p className="no-results" style={{ textAlign: "center", padding: "40px", color: "#98a69d" }}>
+            No events found.
+          </p>
         )}
       </main>
     </div>

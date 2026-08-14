@@ -4,15 +4,25 @@ import { authenticate, authorizeAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/', authenticate, authorizeAdmin, async (req, res) => {
+router.get('/:userParam', async (req, res) => {
+  const { userParam } = req.params;
+
   try {
-    const [rows] = await query('SELECT * FROM notification ORDER BY createdAt DESC');
-    res.json(rows);
+    let noticeSql;
+    let queryParams = [userParam];
+
+    if (!isNaN(Number(userParam))) {
+      noticeSql = `SELECT * FROM notification WHERE userId = ? ORDER BY createdAt DESC`;
+    } else {
+      noticeSql = `SELECT * FROM notification WHERE userId = 1 ORDER BY createdAt DESC`;
+    }
+    const rows = await query(noticeSql, queryParams);
+    return res.json(Array.isArray(rows) ? rows : []);
   } catch (err) {
-    console.error("SQL error fetching all notifications:", err.message);
-    res.status(500).json({ error: "Database execution failed to retrieve logs." });
+    return res.status(500).json({ error: "Database retrieval error.", details: err.message });
   }
 });
+
 
 router.patch('/:id/read', async (req, res) => {
   const { id } = req.params;

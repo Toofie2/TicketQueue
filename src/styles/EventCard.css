@@ -1,45 +1,49 @@
 .event-card {
-  background-color: white;
+  background-color: #12202a;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(197, 150, 72, 0.15);
+  cursor: pointer;
 }
 
 .event-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 10px 24px rgba(197, 150, 72, 0.15);
 }
 
 .event-image {
-  height: 170px;
+  width: 100%;
+  aspect-ratio: 16 / 10;
   background-color: #f2eadc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.event-image span {
-  font-size: 24px;
-  font-weight: 800;
-  color: #172d3a;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .event-info {
   padding: 16px;
+  text-align: left;
 }
 
 .event-info h3 {
-  margin: 0 0 10px;
-  font-size: 20px;
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
 }
 
 .event-info p {
-  margin: 6px 0;
-  color: #333;
+  margin: 4px 0;
+  color: #98a69d;
+  font-size: 14px;
 }
 
 .event-price {
   font-weight: 800;
-  color: #b6843c;
+  color: #c59648 !important;
+  font-size: 16px !important;
+  margin-top: 8px !important;
 }
