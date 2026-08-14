@@ -62,7 +62,7 @@ if (!queueId) {
 
     res.status(201).json({ message: "Joined successfully" });
   } catch (err) {
-    console.error("🔴 CRITICAL SQL JOIN REJECT FAULT:", err); 
+    console.error("CRITICAL SQL JOIN REJECT FAULT:", err); 
     res.status(500).json({ error: "Database execution failed to join line.", details: err.message });
   }
 });
@@ -178,12 +178,11 @@ const checkoutRow = checkoutRows[0];
       tickets: userEntry.tickets || 1 
     });
   } catch (err) {
-    console.error("🔴 CRITICAL STATUS CALCULATION CRASH:", err);
+    console.error(" CRITICAL STATUS CALCULATION CRASH:", err);
     res.status(500).json({ error: "Database execution failed to retrieve position data.", details: err.message });
   }
 });
 
-// 3. DELETE: Leave Queue / Soft-Delete (Updated to set status to 'canceled' instead of row purging)
 router.delete('/leave/:userId', async (req, res) => {
   const { userId } = req.params;
   const { serviceId } = req.query;
@@ -204,10 +203,10 @@ router.delete('/leave/:userId', async (req, res) => {
     }
 
     const result = await query(leaveSql, queryParams);
-    console.log(`📉 User ID ${cleanUserId} marked as INACTIVE ('canceled') inside the cloud database.`);
+    console.log(`User ID ${cleanUserId} marked as INACTIVE ('canceled') inside the cloud database.`);
     res.json({ message: "Left queue successfully", affectedRows: result.affectedRows });
   } catch (err) {
-    console.error("🔴 SQL Soft-Leave error:", err.message);
+    console.error("SQL Soft-Leave error:", err.message);
     res.status(500).json({ error: "Database execution failed to update status flag." });
   }
 });
