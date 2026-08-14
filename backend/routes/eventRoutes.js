@@ -12,7 +12,20 @@ const SELECT_EVENTS = `
     s.eventTime,
     s.eventDate,
     s.price,
-    q.status AS queueStatus
+    CASE
+      WHEN EXISTS (
+        SELECT 1
+        FROM queue q
+        WHERE q.serviceId = s.id
+          AND q.status = 'open'
+      ) THEN 'open'
+      WHEN EXISTS (
+        SELECT 1
+        FROM queue q
+        WHERE q.serviceId = s.id
+      ) THEN 'closed'
+      ELSE NULL
+    END AS queueStatus
   FROM service s
 `;
 
