@@ -49,6 +49,30 @@ try {
     [admin.insertId, 'Admin', 'admin@tixq.com']
   );
 
+  const MOCK_PEOPLE = [
+    { name: 'Ava Martinez', priority: 'Medium' },
+    { name: 'Liam Chen', priority: 'Medium' },
+    { name: 'Noah Patel', priority: 'Medium' },
+    { name: 'Sofia Reyes', priority: 'Medium' },
+    { name: 'Ethan Brooks', priority: 'Medium' },
+  ];
+  const MOCK_COUNTS = [2, 4, 1, 3, 2, 4, 5, 2, 1, 3, 3, 3, 2];
+
+  const customers = [];
+  for (const person of MOCK_PEOPLE) {
+    const email = person.name.toLowerCase().replace(/\s+/g, '.') + '@demo.com';
+    const [c] = await conn.query(
+      'INSERT INTO usercredentials (email, password, role) VALUES (?, ?, ?)',
+      [email, bcrypt.hashSync('Password123!', 8), 'user']
+    );
+    await conn.query('INSERT INTO userprofile (userId, fullName, email) VALUES (?, ?, ?)', [
+      c.insertId,
+      person.name,
+      email,
+    ]);
+    customers.push({ id: c.insertId, name: person.name, email, priority: person.priority });
+  }
+
   for (let i = 0; i < events.length; i++) {
     const e = events[i];
     await conn.query(
@@ -68,13 +92,37 @@ try {
         500,
       ]
     );
-    await conn.query('INSERT INTO queue (serviceId, status) VALUES (?, ?)', [e.id, 'open']);
+    const [queueResult] = await conn.query('INSERT INTO queue (serviceId, status) VALUES (?, ?)', [e.id, 'open']);
+    const count = MOCK_COUNTS[i] ?? 3;
+    for (let j = 0; j < count; j++) {
+      const person = customers[j % customers.length];
+      await conn.query(
+        `INSERT INTO queueentry (queueId, userId, tickets, priority, status, joinTime)
+         VALUES (?, ?, ?, ?, 'waiting', NOW() + INTERVAL ? SECOND)`,
+        [queueResult.insertId, person.id, 1, person.priority, j]
+      );
+    }
+  }
+
+  const historySeed = [
+    [customers[0].id, events[0].title, 'Served', '2026-07-20'],
+    [customers[0].id, events[3].title, 'Left Queue', '2026-07-18'],
+    [customers[1].id, events[1].title, 'Served', '2026-07-15'],
+    [customers[2].id, events[5].title, 'Joined Queue', '2026-07-22'],
+    [customers[3].id, events[8].title, 'Served', '2026-07-10'],
+  ];
+  for (const h of historySeed) {
+    await conn.query('INSERT INTO history (userId, serviceName, outcome, eventDate) VALUES (?, ?, ?, ?)', h);
   }
 
   const [[svc]] = await conn.query('SELECT COUNT(*) AS n FROM service');
   const [[q]] = await conn.query('SELECT COUNT(*) AS n FROM queue');
   const [[u]] = await conn.query('SELECT COUNT(*) AS n FROM usercredentials');
-  console.log(`Seeded: ${u.n} user(s), ${svc.n} services, ${q.n} queues.`);
+  const [[qe]] = await conn.query('SELECT COUNT(*) AS n FROM queueentry');
+  const [[h]] = await conn.query('SELECT COUNT(*) AS n FROM history');
+  console.log(
+    `Seeded: ${u.n} users, ${svc.n} services, ${q.n} queues, ${qe.n} queue entries, ${h.n} history records.`
+  );
   await conn.end();
 } catch (err) {
   console.error('Seed failed:', err.code || err.message);

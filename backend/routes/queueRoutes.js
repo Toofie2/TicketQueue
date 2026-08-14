@@ -49,6 +49,17 @@ if (!queueId) {
     `;
     await query(insertSql, [queueId, cleanUserId, Number(tickets) || 1, priority || 'Medium']);
 
+    try {
+      const [svcRows] = await query('SELECT name FROM service WHERE id = ?', [cleanServiceId]);
+      const svcName = svcRows[0]?.name || 'the event';
+      await query(
+        `INSERT INTO notification (userId, serviceId, type, message) VALUES (?, ?, 'queue-join', ?)`,
+        [cleanUserId, cleanServiceId, `You joined the queue for ${svcName}.`]
+      );
+    } catch (notifyErr) {
+      console.error('Notification (join) failed:', notifyErr.message);
+    }
+
     res.status(201).json({ message: "Joined successfully" });
   } catch (err) {
     console.error("🔴 CRITICAL SQL JOIN REJECT FAULT:", err); 
@@ -128,7 +139,29 @@ const checkoutRow = checkoutRows[0];
       if (!checkoutRow) {
         await query(`UPDATE queueentry SET status = 'checking_out' WHERE id = ?`, [userEntry.id]);
         waitTime = 0;
-      } else if (checkoutRow.userId !== userEntry.userId) { 
+
+        try {
+          const [svcRows] = await query(
+            'SELECT s.id, s.name FROM service s JOIN queue q ON q.serviceId = s.id WHERE q.id = ?',
+            [userEntry.queueId]
+          );
+          const svc = svcRows[0];
+          if (svc) {
+            const [existing] = await query(
+              `SELECT id FROM notification WHERE userId = ? AND serviceId = ? AND type = 'ready-checkout' LIMIT 1`,
+              [userEntry.userId, svc.id]
+            );
+            if (existing.length === 0) {
+              await query(
+                `INSERT INTO notification (userId, serviceId, type, message) VALUES (?, ?, 'ready-checkout', ?)`,
+                [userEntry.userId, svc.id, `It's your turn! Your tickets for ${svc.name} are ready — checkout now.`]
+              );
+            }
+          }
+        } catch (notifyErr) {
+          console.error('Notification (ready-checkout) failed:', notifyErr.message);
+        }
+      } else if (checkoutRow.userId !== userEntry.userId) {
         return res.json({
           positionAhead: 1,
           waitTime: 1, 
@@ -181,20 +214,22 @@ router.delete('/leave/:userId', async (req, res) => {
 
 router.get('/admin/current', authenticate, authorizeAdmin, async (req, res) => {
   try {
-    const sortedSql = `
-      SELECT * FROM queueentry 
-      WHERE status = 'waiting'
-      ORDER BY 
-        CASE priority 
-          WHEN 'High' THEN 1 
-          WHEN 'Medium' THEN 2 
-          WHEN 'Low' THEN 3 
-          ELSE 4 
-        END ASC, 
-        joinTime ASC
-    `;
-    const sortedQueue = await query(sortedSql);
-    res.json(Array.isArray(sortedQueue) ? sortedQueue : []);
+    const [rows] = await query(`
+      SELECT qe.id, qe.userId, qe.tickets, qe.priority, qe.joinTime, qe.status,
+             s.id AS serviceId, s.name AS serviceName,
+             c.email AS userEmail,
+             COALESCE(p.fullName, c.email) AS name
+      FROM queueentry qe
+      JOIN queue q ON qe.queueId = q.id
+      JOIN service s ON q.serviceId = s.id
+      JOIN usercredentials c ON qe.userId = c.id
+      LEFT JOIN userprofile p ON p.userId = c.id
+      WHERE qe.status = 'waiting'
+      ORDER BY
+        CASE qe.priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 WHEN 'Low' THEN 3 ELSE 4 END ASC,
+        qe.joinTime ASC
+    `);
+    res.json(rows);
   } catch (err) {
     console.error("SQL Admin view error:", err.message);
     res.status(500).json({ error: "Database execution failed to query sorted line states." });
@@ -240,7 +275,27 @@ router.post('/success', async (req, res) => {
     await query(historySql, [cleanUserId, serviceName || "Event Entry Pass", outcome || 'Served', formattedDate]);
     
     const finalStatus = outcome === 'Left Queue' ? 'canceled' : 'served';
-    await query(`UPDATE queueentry SET status = ? WHERE userId = ? AND status IN ('waiting', 'checking_out')`, [finalStatus, cleanUserId]);
+
+    const [entryRows] = await query(
+      `SELECT qe.id, qe.tickets, q.serviceId
+       FROM queueentry qe JOIN queue q ON qe.queueId = q.id
+       WHERE qe.userId = ? AND qe.status IN ('waiting', 'checking_out')
+       ORDER BY qe.joinTime ASC LIMIT 1`,
+      [cleanUserId]
+    );
+    const entry = entryRows[0];
+
+    if (entry) {
+      await query(`UPDATE queueentry SET status = ? WHERE id = ?`, [finalStatus, entry.id]);
+      if (finalStatus === 'served') {
+        await query(
+          `UPDATE service SET quantity = GREATEST(quantity - ?, 0) WHERE id = ?`,
+          [entry.tickets || 1, entry.serviceId]
+        );
+      }
+    } else {
+      await query(`UPDATE queueentry SET status = ? WHERE userId = ? AND status IN ('waiting', 'checking_out')`, [finalStatus, cleanUserId]);
+    }
 
     res.status(201).json({ message: "Success" });
   } catch (err) {

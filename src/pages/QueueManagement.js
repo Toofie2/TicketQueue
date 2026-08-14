@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import QueueTable from "../components/QueueTable";
 import { authHeaders } from "../api/authApi";
+import { logHistoryEvent } from "../api/historyApi";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
@@ -16,16 +17,15 @@ function QueueManagement() {
       .then((data) => {
         if (!Array.isArray(data)) return;
         setQueue(
-          data
-            .map((q) => ({
-              id: q.userId || q.email,
-              name: q.name || q.userId || "Guest",
-              serviceId: q.serviceId,
-              priority: q.priority,
-              tickets: q.tickets || 1,
-              joinedAt: q.joinedAt,
-            }))
-            .sort((a, b) => new Date(a.joinedAt) - new Date(b.joinedAt))
+          data.map((q) => ({
+            id: q.userId,
+            name: q.name || "Guest",
+            email: q.userEmail,
+            serviceName: q.serviceName,
+            serviceId: q.serviceId,
+            priority: q.priority,
+            tickets: q.tickets || 1,
+          }))
         );
       })
       .catch(() => setError("Could not reach the queue API on port 4000."));
@@ -35,8 +35,12 @@ function QueueManagement() {
     fetch(`${API_BASE}/api/services`, { headers: { ...authHeaders() } })
       .then((res) => res.json())
       .then((data) => {
+        if (!Array.isArray(data)) {
+          setError("Could not load events. Please sign in as an admin.");
+          return;
+        }
         setServices(data);
-        setSelectedEvent((prev) => prev ?? data[0]?.name ?? null);
+        setSelectedEvent((prev) => prev ?? data[0]?.id ?? null);
       })
       .catch(() => setError("Could not load services."));
   }, []);
@@ -51,11 +55,24 @@ function QueueManagement() {
     .filter((u) => u.serviceId === selectedEvent)
     .map((u, i) => ({ ...u, waitMinutes: i }));
 
-  const kickUser = (id) => {
-    fetch(`${API_BASE}/api/queue/leave/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    })
-      .then(() => loadQueue())
+  const kickUser = (userId) => {
+    const entry = queue.find(
+      (u) => u.id === userId && u.serviceId === selectedEvent
+    );
+    fetch(
+      `${API_BASE}/api/queue/leave/${encodeURIComponent(userId)}?serviceId=${selectedEvent}`,
+      { method: "DELETE" }
+    )
+      .then(() => {
+        if (entry?.email) {
+          logHistoryEvent({
+            email: entry.email,
+            event: entry.serviceName,
+            outcome: "Left Queue",
+          }).catch(() => {});
+        }
+        loadQueue();
+      })
       .catch(() => setError("Could not remove the user from the queue."));
   };
 
@@ -75,14 +92,14 @@ function QueueManagement() {
 
       <div className="event-tabs">
         {services.map((s) => {
-          const count = queue.filter((u) => u.serviceId === s.name).length;
+          const count = queue.filter((u) => u.serviceId === s.id).length;
           return (
             <button
               key={s.id}
               className={`event-tab ${
-                s.name === selectedEvent ? "event-tab-active" : ""
+                s.id === selectedEvent ? "event-tab-active" : ""
               }`}
-              onClick={() => setSelectedEvent(s.name)}
+              onClick={() => setSelectedEvent(s.id)}
             >
               {s.name}
               <span className="event-tab-count">{count}</span>

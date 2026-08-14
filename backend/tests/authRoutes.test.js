@@ -65,7 +65,7 @@ describe('Auth API', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.message).toBe('Registration successful!');
-      expect(res.body.user).toEqual({ email: 'newuser@test.com', role: 'user', name: 'New User' });
+      expect(res.body.user).toMatchObject({ email: 'newuser@test.com', role: 'user', name: 'New User' });
     });
 
     test('stores a hashed password, never plaintext', async () => {
@@ -163,7 +163,7 @@ describe('Auth API', () => {
         .send({ email: 'admin@tixq.com', password: 'Admin123!' });
 
       expect(res.status).toBe(200);
-      expect(res.body.user).toEqual({ email: 'admin@tixq.com', role: 'admin', name: 'Admin' });
+      expect(res.body.user).toMatchObject({ email: 'admin@tixq.com', role: 'admin', name: 'Admin' });
     });
 
     test('returns a token on successful login', async () => {

@@ -88,7 +88,7 @@
 
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
   margin-bottom: 28px;
 }
@@ -96,8 +96,8 @@
 .stat-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 22px;
+  gap: 8px;
+  padding: 32px 28px;
   border-radius: 16px;
   background-color: var(--gold-soft);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
@@ -110,13 +110,13 @@
 }
 
 .stat-value {
-  font-size: 30px;
+  font-size: 40px;
   font-weight: 800;
   color: var(--slate);
 }
 
 .stat-label {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--slate-dark);
   text-transform: uppercase;

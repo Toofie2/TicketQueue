@@ -6,6 +6,7 @@ import queueRoutes from './routes/queueRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import historyRoutes from './routes/historyRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
 import { authenticate, authorizeAdmin } from './middleware/auth.js';
 
 export function createApp() {
@@ -21,6 +22,7 @@ export function createApp() {
   app.use('/api/queue', queueRoutes);
   app.use('/api/auth', authRoutes);
   app.use('/api/history', historyRoutes);
+  app.use('/api/reports', authenticate, authorizeAdmin, reportRoutes);
 
   return app;
 }
