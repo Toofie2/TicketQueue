@@ -1,12 +1,23 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import usaIcon from '../assets/usaIcon.png';
 
 function Navbar({ username, isLoggedIn, onLogout }) {
   const navigate = useNavigate();
   return (
     <header className="header-bar">
-      <div className="header-left">
-        <span>🇺🇸 US</span>
+      <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <img 
+          src={usaIcon} 
+          alt="Language Select" 
+          style={{ 
+            height: '24px', 
+            width: '24px', 
+            objectFit: 'contain',
+            display: 'block'
+          }} 
+        />
+        <span>US</span>
       </div>
       <div className="header-center">
         <h1 className="header-logo" onClick={() => navigate(isLoggedIn ? '/dashboard' : '/login')}>
