@@ -58,7 +58,7 @@ function Reporting() {
               <span className="stat-label">Events</span>
             </div>
             <div className="stat-card">
-              <span className="stat-value">{report.totalInQueue}</span>
+              <span className="stat-value">{report.totalWaiting}</span>
               <span className="stat-label">In Queue</span>
             </div>
             <div className="stat-card">
@@ -102,6 +102,27 @@ function Reporting() {
                 </li>
               ))}
             </ul>
+          </section>
+
+          <section className="panel">
+            <h2>Customer Participation History</h2>
+            {report.participation.length === 0 ? (
+              <p className="sale-meta">No participation history recorded yet.</p>
+            ) : (
+              <ul className="item-list item-list--light">
+                {report.participation.map((u) => (
+                  <li key={u.email} style={{ display: "block" }}>
+                    <strong>{u.name || u.email}</strong>
+                    <span className="sale-meta">{u.email}</span>
+                    {u.records.map((r, i) => (
+                      <span key={i} className="sale-meta">
+                        {r.date} · {r.event} · {r.outcome}
+                      </span>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </>
       )}

@@ -57,7 +57,11 @@ function ServiceManagement() {
       .then((res) => res.json())
       .then((data) => {
         if (!active) return;
-        setServices(data);
+        if (Array.isArray(data)) {
+          setServices(data);
+        } else {
+          setApiError("Could not load events. Please sign in as an admin.");
+        }
         setLoading(false);
       })
       .catch(() => {

@@ -41,8 +41,10 @@ describe('GET /api/reports/summary', () => {
     expect(res.status).toBe(200);
     expect(res.body.totalServices).toBe(3);
     expect(Array.isArray(res.body.services)).toBe(true);
+    expect(Array.isArray(res.body.participation)).toBe(true);
     expect(res.body).toHaveProperty('served');
     expect(res.body).toHaveProperty('avgWait');
+    expect(res.body).toHaveProperty('totalWaiting');
   });
 });
 

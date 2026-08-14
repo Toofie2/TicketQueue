@@ -9,6 +9,7 @@ function App() {
   const [username, setUsername] = useState('Guest');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
+  const [userId, setUserId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const [isInLine, setIsInLine] = useState(false);
@@ -25,77 +26,80 @@ function App() {
   });
 
   useEffect(() => {
-    if (!isInLine || isTimeUp) return;
+    if (!isInLine || isTimeUp || !userId) return;
 
-    const totalDurationSeconds = 90;
+    const userIdentifier = userId;
 
-    const queueIntervalClock = setInterval(() => {
-      setSecondsElapsed((prev) => {
-        const nextSeconds = prev + 1;
-        const progressRatio = nextSeconds / totalDurationSeconds;
-
-        const nextUsers = Math.max(0, Math.floor(300 * (1 - progressRatio)));
-        setUsersAhead(nextUsers);
-
-        const remaining = totalDurationSeconds - nextSeconds;
-
-        if (remaining > 60) {
-          setWaitTime("2 mins");
-        } else if (remaining === 60) {
-          setWaitTime("1 min");
-        } else if (remaining < 60 && remaining > 0) {
-          setWaitTime("< 1 min");
-        } else if (remaining <= 0) {
-          setIsTimeUp(true);
-          setWaitTime("0 mins");
-          setUsersAhead(0);
-
-          if (!activeToastIdRef.current) {
-            activeToastIdRef.current = toast.success(
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span>🎉 Your turn has arrived for {activeTicket.eventTitle}!</span>
-                <button 
-                  onClick={() => {
-                    toast.dismiss(activeToastIdRef.current);
-                    activeToastIdRef.current = null;
-                    navigate('/checkout');
-                  }} 
-                  style={{
-                    backgroundColor: '#1b2b36',
-                    color: '#c59648',
-                    border: '1px solid #c59648',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: 'bold',
-                    width: 'fit-content'
-                  }}
-                >
-                  Go to Checkout 🛒
-                </button>
-              </div>,
-              {
-                position: "top-right",
-                autoClose: false,
-                closeOnClick: false 
-              }
-            );
+    const syncDatabaseQueueState = () => {
+      fetch(`http://localhost:4000/api/queue/status/${userIdentifier}`)
+        .then((res) => {
+          if (res.status === 404) {
+            setIsTimeUp(true);
+            setUsersAhead(0);
+            setWaitTime("0 mins");
+            return null;
           }
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) return;
 
-          clearInterval(queueIntervalClock);
-          return prev;
-        }
-        return nextSeconds;
-      });
-    }, 1000);
+          setUsersAhead(data.positionAhead);
 
-    return () => clearInterval(queueIntervalClock);
-  }, [isInLine, isTimeUp, activeTicket.eventTitle, navigate]);
+          if (data.positionAhead <= 0 && data.waitTime === 0) {
+
+            setIsTimeUp(true);
+            setWaitTime("0 mins");
+
+            if (!activeToastIdRef.current) {
+              activeToastIdRef.current = toast.success(
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span>🎉 Your turn has arrived for {activeTicket.eventTitle}!</span>
+                  <button 
+                    onClick={() => {
+                      toast.dismiss(activeToastIdRef.current);
+                      activeToastIdRef.current = null;
+                      navigate('/checkout');
+                    }} 
+                    style={{
+                      backgroundColor: '#1b2b36', color: '#c59648', border: '1px solid #c59648',
+                      padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
+                      fontSize: '0.85rem', fontWeight: 'bold', width: 'fit-content'
+                    }}
+                  >
+                    Go to Checkout 🛒
+                  </button>
+                </div>,
+                {
+                  position: "top-right",
+                  autoClose: false,
+                  closeOnClick: false 
+                }
+              );
+            }
+          } else if (data.positionAhead === 1 && data.waitTime === 1) {
+            setWaitTime("Waiting for previous customer to pay...");
+          } else {
+            setWaitTime(data.positionAhead === 1 ? "< 1 min" : `${data.waitTime} mins`);
+          }
+        })
+        .catch((err) => console.log("Database transaction polling connection inactive.", err));
+    };
+    syncDatabaseQueueState();
+    const pollingInterval = setInterval(syncDatabaseQueueState, 3000);
+
+    return () => {
+      clearInterval(pollingInterval);
+      if (activeToastIdRef.current) {
+        toast.dismiss(activeToastIdRef.current);
+        activeToastIdRef.current = null;
+      }
+    };
+  }, [isInLine, isTimeUp, userId, activeTicket.eventTitle, navigate]);
 
   // Called after the backend confirms a successful login/registration.
   // The role comes from the backend response, never guessed on the client.
-  const handleLogin = (userEmail, userRole = 'user', userToken) => {
+  const handleLogin = (userEmail, userRole = 'user', userToken, loggedInUserId) => {
     const nameFromEmail = userEmail.split('@')[0];
     const formattedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
     if (userToken) {
@@ -104,6 +108,7 @@ function App() {
     setUsername(formattedName);
     setEmail(userEmail);
     setRole(userRole);
+    setUserId(loggedInUserId);
     setIsLoggedIn(true);
 
     if (userRole === 'admin') {
@@ -119,6 +124,7 @@ function App() {
     setUsername(''); // This clears the name
     setEmail('');
     setRole('user');
+    setUserId(null);
     setIsLoggedIn(false); // This tells the Navbar to change back
     setIsInLine(false);
     if (activeToastIdRef.current) {
@@ -137,7 +143,7 @@ function App() {
       <div className="page-router-content">
         {/* Pass handleLogout down to the Dashboard via context */}
         <Outlet context={{ 
-          handleLogin, handleLogout, username, email, role, isLoggedIn,
+          handleLogin, handleLogout, username, email, role, userId, isLoggedIn,
           isInLine, setIsInLine, isTimeUp, setIsTimeUp, usersAhead, 
           waitTime, activeTicket, setActiveTicket, secondsElapsed, setSecondsElapsed
         }} />

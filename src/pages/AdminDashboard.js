@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { mockRevenue } from "../data/adminMockData";
 import { authHeaders } from "../api/authApi";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
@@ -39,7 +38,7 @@ function AdminDashboard() {
     0
   );
 
-  const queueFor = (name) => queue.filter((u) => u.serviceId === name);
+  const queueFor = (name) => queue.filter((u) => u.serviceName === name);
 
   const isOpen = (s) => s.queueOpen !== false;
 
@@ -89,10 +88,6 @@ function AdminDashboard() {
         <div className="stat-card">
           <span className="stat-value">{totalTickets.toLocaleString()}</span>
           <span className="stat-label">Tickets Available</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-value">${mockRevenue.toLocaleString()}</span>
-          <span className="stat-label">Revenue</span>
         </div>
         <div className="stat-card">
           <span className="stat-value">{queue.length}</span>

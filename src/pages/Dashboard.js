@@ -27,13 +27,21 @@ function deriveActiveQueues(historyRecords) {
 
 function Dashboard() {
   // 1. Grab BOTH username and handleLogout from the router!
-  const { username, email, isLoggedIn, handleLogout } = useOutletContext();
+  const { username, email, userId, isLoggedIn, handleLogout } = useOutletContext();
   const navigate = useNavigate();
 
   const [activeQueues, setActiveQueues] = useState([]);
   const [isLoadingQueues, setIsLoadingQueues] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [queuePositions, setQueuePositions] = useState({});
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/events')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setEvents(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isLoggedIn || !email) {
@@ -128,7 +136,7 @@ function Dashboard() {
             {notifications.length === 0 ? (
               <p style={{ color: '#888', fontStyle: 'italic', fontSize: '14px' }}>No notifications yet.</p>
             ) : (
-              [...notifications].reverse().slice(0, 3).map(note => {
+              [...notifications].slice(0, 3).map(note => {
                 const isCheckout = note.type === 'ready-checkout';
                 return (
                   <div
@@ -140,7 +148,7 @@ function Dashboard() {
                               .then((res) => (res.ok ? res.json() : null))
                               .then((ev) =>
                                 navigate('/queue', {
-                                  state: ev ? { event: ev, userId: email } : undefined,
+                                  state: ev ? { event: ev, userId } : undefined,
                                 })
                               )
                               .catch(() => navigate('/queue'));
@@ -196,15 +204,18 @@ function Dashboard() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <button
-                    onClick={() =>
+                    onClick={() => {
+                      const fullEvent = events.find(
+                        (e) => e.title === queue.event
+                      );
                       navigate('/queue', {
                         state: {
-                          event: { title: queue.event },
+                          event: fullEvent || { title: queue.event },
                           quantity: 1,
-                          userId: email,
+                          userId,
                         },
-                      })
-                    }
+                      });
+                    }}
                     style={{ background: 'none', border: '1px solid #2A3B4C', color: '#2A3B4C', borderRadius: '6px', padding: '8px 14px', cursor: 'pointer' }}
                   >
                     View Queue
