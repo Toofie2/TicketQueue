@@ -10,7 +10,7 @@ function Events() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
-  const [sortOption, setSortOption] = useState("default");
+  const [sortOption, setSortOption] = useState("date-asc");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
@@ -88,24 +88,24 @@ function Events() {
   });
 
   const sortedEvents = [...filteredEvents].sort((a, b) => {
-  if (sortOption === "date-asc") {
-    return new Date(a.date) - new Date(b.date);
-  }
+    if (sortOption === "date-asc") {
+      return new Date(a.date) - new Date(b.date);
+    }
 
-  if (sortOption === "date-desc") {
-    return new Date(b.date) - new Date(a.date);
-  }
+    if (sortOption === "date-desc") {
+      return new Date(b.date) - new Date(a.date);
+    }
 
-  if (sortOption === "price-asc") {
-    return Number(a.price) - Number(b.price);
-  }
+    if (sortOption === "price-asc") {
+      return Number(a.price) - Number(b.price);
+    }
 
-  if (sortOption === "price-desc") {
-    return Number(b.price) - Number(a.price);
-  }
+    if (sortOption === "price-desc") {
+      return Number(b.price) - Number(a.price);
+    }
 
-  return 0;
-});
+    return 0;
+  });
 
   return (
     <div className="events-page">
@@ -142,7 +142,6 @@ function Events() {
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
         >
-          <option value="default">Default</option>
           <option value="date-asc">Date: Soonest</option>
           <option value="date-desc">Date: Latest</option>
           <option value="price-asc">Price: Low to High</option>

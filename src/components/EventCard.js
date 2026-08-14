@@ -4,6 +4,8 @@ import "../styles/EventCard.css";
 function EventCard({ event }) {
   const navigate = useNavigate();
   const closed = event.queueOpen === false;
+  const fallbackImage = "https://unsplash.com";
+  const displayImage = event.image || fallbackImage;
 
   return (
     <div
@@ -34,13 +36,20 @@ function EventCard({ event }) {
           Closed
         </span>
       )}
-
-      <div className="event-image">
-        <span>{event.category}</span>
+      <div 
+        className="event-image"
+        style={{
+          backgroundImage: `url(${displayImage})`
+        }}
+      >
       </div>
 
       <div className="event-info">
         <h3>{event.title}</h3>
+        <p style={{ color: "#b6843c", textTransform: "uppercase", fontSize: "12px", fontWeight: "700", letterSpacing: "0.5px", margin: "0 0 6px 0" }}>
+          {event.category || "General"}
+        </p>
+
         <p>{event.date} • {event.time}</p>
         <p>{event.location}</p>
         <p className="event-price">${event.price}</p>

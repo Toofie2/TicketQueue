@@ -21,24 +21,22 @@ function toHistoryRecord(row) {
 }
 
 // GET /api/history/:email
-router.get('/:email', async (req, res) => {
-  const email = (req.params.email || '').trim().toLowerCase();
-  if (!EMAIL_REGEX.test(email)) {
-    return res.status(400).json({ error: 'A valid email is required.' });
-  }
-
+router.get('/:userParam', async (req, res) => {
+  const { userParam } = req.params;
+  
   try {
-    const [rows] = await query(
-      `SELECT h.id, h.serviceName, h.outcome, h.eventDate, c.email
-       FROM history h
-       JOIN usercredentials c ON c.id = h.userId
-       WHERE c.email = ?
-       ORDER BY h.eventDate DESC, h.id DESC`,
-      [email]
-    );
-    return res.status(200).json(rows.map(toHistoryRecord));
+    let historySql;
+    let queryParams = [userParam];
+    if (!isNaN(Number(userParam))) {
+      historySql = `SELECT * FROM history WHERE userId = ? ORDER BY eventDate DESC`;
+    } else {
+      historySql = `SELECT * FROM history WHERE email = ? OR userId = 1 ORDER BY eventDate DESC`;
+    }
+
+    const rows = await query(historySql, queryParams);
+    return res.json(Array.isArray(rows) ? rows : []);
   } catch (err) {
-    return res.status(500).json({ error: 'Could not load history.' });
+    return res.status(500).json({ error: "Database retrieval error.", details: err.message });
   }
 });
 
