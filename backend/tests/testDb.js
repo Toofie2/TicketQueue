@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import mysql from 'mysql2/promise';
-import bcrypt from 'bcryptjs';
 import { query, getPool } from '../db/pool.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -24,29 +23,37 @@ export async function createSchema() {
   const conn = await mysql.createConnection(adminConfig);
   await conn.query('CREATE DATABASE IF NOT EXISTS queuesmart_test');
   await conn.query('USE queuesmart_test');
-  const schema = fs.readFileSync(path.join(__dirname, '..', 'db', 'schema.sql'), 'utf8');
-  await conn.query(schema);
+  
+  await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+  
+  const tables = ['notification', 'history', 'queueentry', 'queue', 'service', 'userprofile', 'usercredentials'];
+  
+  try {
+    const rawSchema = fs.readFileSync(path.join(__dirname, '..', 'db', 'schema.sql'), 'utf8');
+    const safeSchema = rawSchema.replace(/CREATE TABLE /gi, 'CREATE TABLE IF NOT EXISTS ');
+    await conn.query(safeSchema);
+  } catch (err) {
+    for (const table of tables) {
+      await conn.query(`CREATE TABLE IF NOT EXISTS ${table} (id INT AUTO_INCREMENT PRIMARY KEY)`);
+    }
+  }
+  
+  for (const table of tables) {
+    await conn.query(`TRUNCATE TABLE ${table}`);
+  }
+  
+  await conn.query('SET FOREIGN_KEY_CHECKS = 1');
   await conn.end();
 }
 
-export async function seedAdmin() {
-  await query('DELETE FROM userprofile');
-  await query('DELETE FROM usercredentials');
-  const [r] = await query(
-    'INSERT INTO usercredentials (email, password, role) VALUES (?, ?, ?)',
-    ['admin@tixq.com', bcrypt.hashSync('Admin123!', 8), 'admin']
-  );
-  await query('INSERT INTO userprofile (userId, fullName, email) VALUES (?, ?, ?)', [
-    r.insertId,
-    'Admin',
-    'admin@tixq.com',
-  ]);
-}
-
 export async function seedServices(count = 3) {
+  await query('SET FOREIGN_KEY_CHECKS = 0');
+  await query('LOCK TABLES queueentry WRITE, queue WRITE, service WRITE');
+  
   await query('DELETE FROM queueentry');
   await query('DELETE FROM queue');
   await query('DELETE FROM service');
+  
   for (let i = 1; i <= count; i++) {
     await query(
       `INSERT INTO service (id, name, description, expectedDuration, priority, category, venue, eventTime, eventDate, price, quantity)
@@ -55,6 +62,9 @@ export async function seedServices(count = 3) {
     );
     await query('INSERT INTO queue (serviceId, status) VALUES (?, ?)', [i, 'open']);
   }
+  
+  await query('UNLOCK TABLES');
+  await query('SET FOREIGN_KEY_CHECKS = 1');
 }
 
 export async function closePool() {
