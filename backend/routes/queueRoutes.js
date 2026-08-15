@@ -56,8 +56,12 @@ if (!queueId) {
         `INSERT INTO notification (userId, serviceId, type, message) VALUES (?, ?, 'queue-join', ?)`,
         [cleanUserId, cleanServiceId, `You joined the queue for ${svcName}.`]
       );
+      await query(
+        `INSERT INTO history (userId, serviceName, outcome, eventDate) VALUES (?, ?, 'Joined Queue', ?)`,
+        [cleanUserId, svcName, new Date().toISOString().slice(0, 10)]
+      );
     } catch (notifyErr) {
-      console.error('Notification (join) failed:', notifyErr.message);
+      console.error('Notification/history (join) failed:', notifyErr.message);
     }
 
     res.status(201).json({ message: "Joined successfully" });

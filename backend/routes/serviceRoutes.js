@@ -7,9 +7,8 @@ const router = express.Router();
 const SELECT_SERVICES = `
   SELECT s.id, s.name, s.description, s.expectedDuration, s.priority,
          s.category, s.venue, s.eventTime, s.eventDate, s.price, s.quantity,
-         q.status AS queueStatus
+         (SELECT q.status FROM queue q WHERE q.serviceId = s.id ORDER BY q.id LIMIT 1) AS queueStatus
   FROM service s
-  LEFT JOIN queue q ON q.serviceId = s.id
 `;
 
 function toService(row) {
