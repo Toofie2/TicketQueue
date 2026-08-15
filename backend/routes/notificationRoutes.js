@@ -9,7 +9,7 @@ router.patch('/:id/read', async (req, res) => {
   const { id } = req.params;
   try {
     const updateSql = "UPDATE notification SET status = 'viewed' WHERE id = ?";
-    const result = await query(updateSql, [Number(id)]);
+    const [result] = await query(updateSql, [Number(id)]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Notification not found' });
