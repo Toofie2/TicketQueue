@@ -6,7 +6,7 @@ const router = express.Router();
 // 🌟 FIX 1: Added s.priority explicitly to the SELECT DISTINCT columns list 
 // to permanently resolve the ORDER BY column validation mismatch crash!
 const SELECT_EVENTS = `
-  SELECT DISTINCT
+  SELECT
     s.id,
     s.name,
     s.description,
@@ -16,10 +16,9 @@ const SELECT_EVENTS = `
     s.eventDate,
     s.price,
     s.image,
-    s.priority, -- 👈 Added here safely to unblock priority sorting checks
-    q.status AS queueStatus
+    s.priority,
+    (SELECT q.status FROM queue q WHERE q.serviceId = s.id ORDER BY q.id LIMIT 1) AS queueStatus
   FROM service s
-  LEFT JOIN queue q ON q.serviceId = s.id
 `;
 
 function toEvent(row) {

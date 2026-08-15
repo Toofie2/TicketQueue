@@ -13,6 +13,7 @@ function EventDetails() {
     userId: contextUserId,
     isLoggedIn,
     setIsInLine,
+    setActiveTicket,
   } = useOutletContext();
 
   const [event, setEvent] = useState(null);
@@ -97,6 +98,17 @@ function EventDetails() {
       }
 
       if (setIsInLine) setIsInLine(true);
+
+      if (setActiveTicket) {
+        setActiveTicket({
+          event: { ...event, id: dbServiceId, title: resolvedEventName },
+          eventTitle: resolvedEventName,
+          quantity,
+          ticketQuantity: quantity,
+          totalPrice,
+          finalPrice: totalPrice,
+        });
+      }
 
       navigate("/queue", {
         state: {
