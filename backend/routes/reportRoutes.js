@@ -4,32 +4,52 @@ import { query } from '../db/pool.js';
 
 const router = express.Router();
 
-async function gatherData() {
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+async function gatherData({ from, to, serviceId } = {}) {
+  const svcId = serviceId && !isNaN(Number(serviceId)) ? Number(serviceId) : null;
+  const dateFrom = ISO_DATE.test(from || '') ? from : null;
+  const dateTo = ISO_DATE.test(to || '') ? to : null;
+
+  let svcName = null;
+  if (svcId) {
+    const [srows] = await query('SELECT name FROM service WHERE id = ?', [svcId]);
+    svcName = srows[0]?.name || null;
+  }
+
   const [services] = await query(`
     SELECT s.id, s.name, s.category, s.priority, s.expectedDuration, s.price,
       (SELECT q.status FROM queue q WHERE q.serviceId = s.id ORDER BY q.id LIMIT 1) AS queueStatus,
       (SELECT COUNT(*) FROM queueentry qe JOIN queue q ON qe.queueId = q.id
          WHERE q.serviceId = s.id AND qe.status = 'waiting') AS waiting
     FROM service s
+    ${svcId ? 'WHERE s.id = ?' : ''}
     ORDER BY s.id
-  `);
+  `, svcId ? [svcId] : []);
 
-  const [countRows] = await query(`
-    SELECT
-      (SELECT COUNT(*) FROM queueentry WHERE status = 'waiting') AS waiting,
-      (SELECT COUNT(*) FROM history WHERE outcome = 'Served') AS served,
-      (SELECT COUNT(*) FROM history WHERE outcome = 'Left Queue') AS canceled
-  `);
-  const counts = countRows[0];
+  const totalWaiting = services.reduce((a, s) => a + Number(s.waiting || 0), 0);
+
+  const countHistory = async (outcome) => {
+    const conds = ['h.outcome = ?'];
+    const params = [outcome];
+    if (dateFrom) { conds.push('h.eventDate >= ?'); params.push(dateFrom); }
+    if (dateTo) { conds.push('h.eventDate <= ?'); params.push(dateTo); }
+    if (svcName) { conds.push('h.serviceName = ?'); params.push(svcName); }
+    const [rows] = await query(`SELECT COUNT(*) AS n FROM history h WHERE ${conds.join(' AND ')}`, params);
+    return Number(rows[0].n);
+  };
+  const served = await countHistory('Served');
+  const left = await countHistory('Left Queue');
 
   const [waitingRows] = await query(`
-    SELECT queueId, priority, joinTime
-    FROM queueentry
-    WHERE status = 'waiting'
-    ORDER BY queueId,
-      CASE priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 WHEN 'Low' THEN 3 ELSE 4 END,
-      joinTime
-  `);
+    SELECT qe.queueId, qe.priority, qe.joinTime
+    FROM queueentry qe
+    JOIN queue q ON qe.queueId = q.id
+    WHERE qe.status = 'waiting' ${svcId ? 'AND q.serviceId = ?' : ''}
+    ORDER BY qe.queueId,
+      CASE qe.priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 WHEN 'Low' THEN 3 ELSE 4 END,
+      qe.joinTime
+  `, svcId ? [svcId] : []);
   const positionByQueue = {};
   let waitSum = 0;
   for (const entry of waitingRows) {
@@ -38,13 +58,20 @@ async function gatherData() {
   }
   const avgWait = waitingRows.length ? Math.round((waitSum / waitingRows.length) * 10) / 10 : 0;
 
+  const partConds = [];
+  const partParams = [];
+  if (dateFrom) { partConds.push('h.eventDate >= ?'); partParams.push(dateFrom); }
+  if (dateTo) { partConds.push('h.eventDate <= ?'); partParams.push(dateTo); }
+  if (svcName) { partConds.push('h.serviceName = ?'); partParams.push(svcName); }
+  const partWhere = partConds.length ? 'WHERE ' + partConds.join(' AND ') : '';
   const [historyRows] = await query(`
     SELECT c.email, p.fullName AS name, h.serviceName AS event, h.outcome, h.eventDate AS date
     FROM history h
     JOIN usercredentials c ON c.id = h.userId
     LEFT JOIN userprofile p ON p.userId = c.id
+    ${partWhere}
     ORDER BY c.email, h.eventDate DESC, h.id DESC
-  `);
+  `, partParams);
   const byUser = {};
   for (const r of historyRows) {
     if (!byUser[r.email]) byUser[r.email] = { email: r.email, name: r.name || '', records: [] };
@@ -53,10 +80,11 @@ async function gatherData() {
 
   return {
     generatedAt: new Date().toISOString(),
+    filters: { from: dateFrom, to: dateTo, serviceId: svcId, serviceName: svcName },
     totalServices: services.length,
-    totalWaiting: Number(counts.waiting),
-    served: Number(counts.served),
-    left: Number(counts.canceled),
+    totalWaiting,
+    served,
+    left,
     avgWait,
     services: services.map((s) => ({
       id: s.id,
@@ -74,7 +102,7 @@ async function gatherData() {
 
 router.get('/summary', async (req, res) => {
   try {
-    res.json(await gatherData());
+    res.json(await gatherData(req.query));
   } catch {
     res.status(500).json({ error: 'Could not build the report.' });
   }
@@ -82,7 +110,7 @@ router.get('/summary', async (req, res) => {
 
 router.get('/summary.pdf', async (req, res) => {
   try {
-    const report = await gatherData();
+    const report = await gatherData(req.query);
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="queuesmart-report.pdf"');
@@ -103,6 +131,16 @@ function renderPdf(doc, report) {
     .fontSize(10)
     .fillColor('gray')
     .text(`Generated ${new Date(report.generatedAt).toLocaleString()}`, { align: 'center' });
+
+  const f = report.filters || {};
+  const filterParts = [];
+  filterParts.push(`Service: ${f.serviceName || 'All services'}`);
+  if (f.from || f.to) {
+    filterParts.push(`Dates: ${f.from || 'start'} to ${f.to || 'today'}`);
+  } else {
+    filterParts.push('Dates: all time');
+  }
+  doc.fontSize(10).fillColor('#2A3B4C').text(filterParts.join('     |     '), { align: 'center' });
   doc.moveDown(1.5);
 
   doc.fontSize(14).fillColor('#2A3B4C').text('Queue Usage Statistics');
