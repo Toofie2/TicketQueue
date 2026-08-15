@@ -172,6 +172,12 @@ function Reporting() {
               <span className="stat-label">Served</span>
             </div>
             <div className="stat-card">
+              <span className="stat-value">
+                ${Number(report.revenue || 0).toLocaleString()}
+              </span>
+              <span className="stat-label">Revenue</span>
+            </div>
+            <div className="stat-card">
               <span className="stat-value">{report.avgWait}</span>
               <span className="stat-label">Avg Wait (min)</span>
             </div>

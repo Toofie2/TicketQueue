@@ -41,6 +41,20 @@ async function gatherData({ from, to, serviceId } = {}) {
   const served = await countHistory('Served');
   const left = await countHistory('Left Queue');
 
+  const revenueConds = ["h.outcome = 'Served'"];
+  const revenueParams = [];
+  if (dateFrom) { revenueConds.push('h.eventDate >= ?'); revenueParams.push(dateFrom); }
+  if (dateTo) { revenueConds.push('h.eventDate <= ?'); revenueParams.push(dateTo); }
+  if (svcName) { revenueConds.push('h.serviceName = ?'); revenueParams.push(svcName); }
+  const [revRows] = await query(`
+    SELECT COALESCE(SUM(
+      (SELECT s.price FROM service s WHERE s.name = h.serviceName ORDER BY s.id LIMIT 1)
+    ), 0) AS revenue
+    FROM history h
+    WHERE ${revenueConds.join(' AND ')}
+  `, revenueParams);
+  const revenue = Number(revRows[0].revenue) || 0;
+
   const [waitingRows] = await query(`
     SELECT qe.queueId, qe.priority, qe.joinTime
     FROM queueentry qe
@@ -86,6 +100,7 @@ async function gatherData({ from, to, serviceId } = {}) {
     served,
     left,
     avgWait,
+    revenue,
     services: services.map((s) => ({
       id: s.id,
       name: s.name,
@@ -151,6 +166,7 @@ function renderPdf(doc, report) {
   stat('Total events', report.totalServices);
   stat('Users currently in queue', report.totalWaiting);
   stat('Users served', report.served);
+  stat('Total revenue', `$${Number(report.revenue).toLocaleString()}`);
   stat('Users who left the queue', report.left);
   stat('Average wait time (min)', report.avgWait);
   doc.moveDown(1.5);
