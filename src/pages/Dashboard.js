@@ -8,10 +8,7 @@ import { fetchNotifications } from '../api/notificationsApi';
 // A queue is "active" if the most recent history event for that event name
 // is a join with no later leave/served event after it.
 function deriveActiveQueues(historyRecords) {
-  const sorted = [...historyRecords].sort((a, b) => {
-    const dateDiff = new Date(b.date) - new Date(a.date);
-    return dateDiff !== 0 ? dateDiff : b.id - a.id;
-  });
+  const sorted = [...historyRecords].sort((a, b) => b.id - a.id);
 
   const seenEvents = new Set();
   const active = [];
