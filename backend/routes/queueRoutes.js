@@ -227,8 +227,9 @@ router.get('/admin/current', authenticate, authorizeAdmin, async (req, res) => {
       JOIN service s ON q.serviceId = s.id
       JOIN usercredentials c ON qe.userId = c.id
       LEFT JOIN userprofile p ON p.userId = c.id
-      WHERE qe.status = 'waiting'
+      WHERE qe.status IN ('waiting', 'checking_out')
       ORDER BY
+        CASE qe.status WHEN 'checking_out' THEN 0 ELSE 1 END ASC,
         CASE qe.priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 WHEN 'Low' THEN 3 ELSE 4 END ASC,
         qe.joinTime ASC
     `);
