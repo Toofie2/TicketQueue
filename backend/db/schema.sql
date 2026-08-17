@@ -34,7 +34,8 @@ CREATE TABLE service (
   eventTime VARCHAR(20),
   eventDate DATE,
   price DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  quantity INT NOT NULL DEFAULT 0
+  quantity INT NOT NULL DEFAULT 0,
+  image VARCHAR(255)
 );
 
 CREATE TABLE queue (
