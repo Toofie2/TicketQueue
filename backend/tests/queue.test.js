@@ -1,5 +1,6 @@
 import request from 'supertest';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { createApp } from '../apiServer.js';
 import { query } from '../db/pool.js';
 import { createSchema, seedServices, closePool } from './testDb.js';
@@ -102,6 +103,8 @@ describe('Queue API (DB-backed)', () => {
       expect(res.status).toBe(404);
     });
 =======
+=======
+>>>>>>> d572743ad947ddd4fa597969687b141b5bb32caf
 import express from 'express';
 import queueRoutes from '../routes/queueRoutes.js';
 import { query } from '../db/pool.js';
@@ -137,6 +140,7 @@ describe('Queue Module Logic Validation', () => {
   test('GET /status must accurately calculate the position * 15 minute wait rule', async () => {
     const res = await request(app).get('/api/queue/status/1');
     expect([200, 404]).toContain(res.status);
+<<<<<<< HEAD
 >>>>>>> af749c72f23ffd1bd0820660a3ed1a39d798c5ed
   });
 
@@ -156,5 +160,7 @@ describe('Queue Module Logic Validation', () => {
       const res = await request(app).get('/api/queue/admin/current');
       expect(res.status).toBe(401);
     });
+=======
+>>>>>>> d572743ad947ddd4fa597969687b141b5bb32caf
   });
 });

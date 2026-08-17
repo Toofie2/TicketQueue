@@ -1,5 +1,6 @@
 import request from 'supertest';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { createApp } from '../apiServer.js';
 import { query } from '../db/pool.js';
 import { createSchema, closePool } from './testDb.js';
@@ -105,6 +106,8 @@ describe('Notifications API', () => {
       expect(res.status).toBe(404);
     });
 =======
+=======
+>>>>>>> d572743ad947ddd4fa597969687b141b5bb32caf
 import express from 'express';
 import notificationRoutes from '../routes/notificationRoutes.js';
 
@@ -131,6 +134,9 @@ describe('Notification API Endpoint Suites', () => {
   test('PATCH /api/notifications/:id/read › returns 404 for an invalid notification key', async () => {
     const res = await request(app).patch('/api/notifications/9999/read');
     expect([404, 500]).toContain(res.status);
+<<<<<<< HEAD
 >>>>>>> af749c72f23ffd1bd0820660a3ed1a39d798c5ed
+=======
+>>>>>>> d572743ad947ddd4fa597969687b141b5bb32caf
   });
 });
