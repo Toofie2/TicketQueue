@@ -17,7 +17,7 @@ export function createApp() {
   app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
   app.use('/api/events', eventRoutes);
-  app.use('/api/services', authenticate, authorizeAdmin, serviceRoutes);
+  app.use('/api/services',serviceRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/queue', queueRoutes);
   app.use('/api/auth', authRoutes);
