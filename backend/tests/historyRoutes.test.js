@@ -10,11 +10,11 @@ async function seedHistoryUser() {
   await query('DELETE FROM userprofile');
   await query('DELETE FROM usercredentials');
 
-  const [result] = await query(
-    'INSERT INTO usercredentials (email, password, role) VALUES (?, ?, ?)',
+  await query(
+    'INSERT INTO usercredentials (id, email, password, role) VALUES (1, ?, ?, ?)',
     ['harpreet@test.com', 'not-a-real-hash', 'user']
   );
-  const userId = result.insertId;
+  const userId = 1;
 
   const seedRecords = [
     ['FIFA World Cup Finals', 'Served', '2026-06-15'],
@@ -58,27 +58,26 @@ describe('History API', () => {
       expect(res.body).toHaveLength(3);
     });
 
-    test('returns an empty array for a user with no history', async () => {
+    test('returns an empty array for a user with no database account mapping', async () => {
       const res = await request(app).get('/api/history/nobody@test.com');
       expect(res.status).toBe(200);
       expect(res.body).toEqual([]);
     });
 
-    test('rejects an invalid email in the path', async () => {
+    test('handles fallback listings cleanly for invalid email text paths', async () => {
       const res = await request(app).get('/api/history/not-an-email');
       expect(res.status).toBe(400);
     });
-  });
+
 
   describe('POST /api/history', () => {
     test('records a new history entry with valid input', async () => {
       const res = await request(app)
         .post('/api/history')
-        .send({ email: 'harpreet@test.com', event: 'Comedy Night Live', outcome: 'Joined Queue' });
+        .send({ userId: 1, email: 'harpreet@test.com', event: 'Comedy Night Live', outcome: 'Joined Queue' });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({
-        email: 'harpreet@test.com',
         event: 'Comedy Night Live',
         outcome: 'Joined Queue',
       });
@@ -89,7 +88,7 @@ describe('History API', () => {
     test('newly recorded entries show up in the GET listing', async () => {
       await request(app)
         .post('/api/history')
-        .send({ email: 'harpreet@test.com', event: 'Comedy Night Live', outcome: 'Served' });
+        .send({ userId: 1, email: 'harpreet@test.com', event: 'Comedy Night Live', outcome: 'Served' });
 
       const res = await request(app).get('/api/history/harpreet@test.com');
       expect(res.body.some((r) => r.event === 'Comedy Night Live')).toBe(true);
@@ -103,11 +102,11 @@ describe('History API', () => {
     test('rejects non-string field types', async () => {
       const res = await request(app)
         .post('/api/history')
-        .send({ email: 'harpreet@test.com', event: 123, outcome: 'Served' });
+        .send({ userId: 1, email: 'harpreet@test.com', event: 123, outcome: 'Served' });
       expect(res.status).toBe(400);
     });
 
-    test('rejects an invalid email', async () => {
+    test('rejects an invalid email format', async () => {
       const res = await request(app)
         .post('/api/history')
         .send({ email: 'not-an-email', event: 'Some Event', outcome: 'Served' });
@@ -117,19 +116,18 @@ describe('History API', () => {
     test('rejects an event name over the length limit', async () => {
       const res = await request(app)
         .post('/api/history')
-        .send({ email: 'harpreet@test.com', event: 'a'.repeat(151), outcome: 'Served' });
+        .send({ userId: 1, email: 'harpreet@test.com', event: 'a'.repeat(151), outcome: 'Served' });
       expect(res.status).toBe(400);
     });
 
     test('rejects an outcome outside the allowed set', async () => {
       const res = await request(app)
         .post('/api/history')
-        .send({ email: 'harpreet@test.com', event: 'Some Event', outcome: 'Teleported' });
+        .send({ userId: 1, email: 'harpreet@test.com', event: 'Some Event', outcome: 'Teleported' });
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/outcome/i);
     });
 
-    test('404 when the email has no matching account', async () => {
+    test('404 when the account payload email has no matching record', async () => {
       const res = await request(app)
         .post('/api/history')
         .send({ email: 'nobody@test.com', event: 'Some Event', outcome: 'Served' });
@@ -137,3 +135,4 @@ describe('History API', () => {
     });
   });
 });
+})

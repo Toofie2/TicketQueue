@@ -83,7 +83,7 @@ router.get('/:id/recommendation', async (req, res) => {
         AND q.status = 'open'
       LEFT JOIN queueentry qe
         ON qe.queueId = q.id
-        AND qe.status = 'waiting'
+        AND qe.status IN ('waiting', 'checking_out')
       WHERE s.id = ?
       GROUP BY
         s.id,
@@ -116,7 +116,7 @@ router.get('/:id/recommendation', async (req, res) => {
         AND q.status = 'open'
       LEFT JOIN queueentry qe
         ON qe.queueId = q.id
-        AND qe.status = 'waiting'
+        AND qe.status IN ('waiting', 'checking_out')
       WHERE s.id <> ?
         AND (
           NOT EXISTS (
