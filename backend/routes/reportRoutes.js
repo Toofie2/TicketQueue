@@ -21,7 +21,7 @@ async function gatherData({ from, to, serviceId } = {}) {
     SELECT s.id, s.name, s.category, s.priority, s.expectedDuration, s.price,
       (SELECT q.status FROM queue q WHERE q.serviceId = s.id ORDER BY q.id LIMIT 1) AS queueStatus,
       (SELECT COUNT(*) FROM queueentry qe JOIN queue q ON qe.queueId = q.id
-         WHERE q.serviceId = s.id AND qe.status = 'waiting') AS waiting
+         WHERE q.serviceId = s.id AND qe.status IN ('waiting', 'checking_out')) AS waiting
     FROM service s
     ${svcId ? 'WHERE s.id = ?' : ''}
     ORDER BY s.id

@@ -85,7 +85,7 @@ function EventDetails() {
         body: JSON.stringify({
           userId: Number(dbUserId),
           serviceId: Number(dbServiceId),
-          priority: event?.priority || "Medium",
+          priority: "Medium",
           name: username || "Demo User",
           tickets: quantity,
         }),
