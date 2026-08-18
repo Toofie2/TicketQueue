@@ -114,6 +114,8 @@ let queryParams = [cleanUserId];
           ELSE 4 
         END OR (
           priority = ? AND joinTime < ?
+        ) OR (
+          priority = ? AND joinTime = ? AND id < ?
         )
       )
     `;
@@ -121,7 +123,10 @@ let queryParams = [cleanUserId];
   userEntry.queueId,
   userEntry.priority,
   userEntry.priority,
-  userEntry.joinTime
+  userEntry.joinTime,
+  userEntry.priority,
+  userEntry.joinTime,
+  userEntry.id
 ]);
 
 const countRow = countRows[0];
